@@ -1,6 +1,11 @@
 {
-  "functions": {
-    "src/app/api/generate/route.ts": { "maxDuration": 300 },
-    "src/app/api/generate/start/route.ts": { "maxDuration": 300 }
-  }
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Content-Type", "value": "application/javascript" }
+      ]
+    }
+  ]
 }
