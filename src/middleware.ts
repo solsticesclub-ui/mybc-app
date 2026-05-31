@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+// Using middleware.ts (compatible with Vercel) rather than proxy.ts (Next.js 16 convention)
+export async function middleware(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
     return NextResponse.next({ request });
   }
@@ -10,7 +11,6 @@ export async function proxy(request: NextRequest) {
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
   const isPublic = isAuthPage || pathname === "/" || pathname.startsWith("/api/");
 
-  // If Supabase isn't configured, pass through (avoids crash on misconfiguration)
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
@@ -38,7 +38,6 @@ export async function proxy(request: NextRequest) {
     const { data } = await supabase.auth.getUser();
     user = data.user;
   } catch {
-    // Supabase connection failed — let the request through, page-level auth will handle it
     return NextResponse.next({ request });
   }
 
