@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       const raw = await callClaude(promptSection0(user), maxTokens);
       const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default">;
 
-      await supabase.from("reports").upsert(
+      const { error: dbErr } = await supabase.from("reports").upsert(
         {
           user_token: token,
           generation_status: "section_0",
@@ -38,11 +38,16 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "user_token" }
       );
+      if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`);
 
       return NextResponse.json({ ok: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      await supabase.from("reports").update({ generation_status: "failed" }).eq("user_token", token);
+      // best-effort status update (may be no row yet if this is the first attempt)
+      await supabase.from("reports").upsert(
+        { user_token: token, generation_status: "failed" },
+        { onConflict: "user_token" }
+      );
       return NextResponse.json({ error: `Section 0 error: ${message}` }, { status: 500 });
     }
   }
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
     const raw = await callClaude(promptSection(section as number, user, chartSummary), maxTokens);
     const result = JSON.parse(raw) as { blocks: Block[]; tile?: Record<string, unknown> };
 
-    await supabase.from("reports").update({
+    const { error: dbErr } = await supabase.from("reports").update({
       generation_status: isLast ? "complete" : `section_${section}`,
       ...(isLast ? { generated_at: new Date().toISOString() } : {}),
       data: {
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
         },
       },
     }).eq("user_token", token);
+    if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
