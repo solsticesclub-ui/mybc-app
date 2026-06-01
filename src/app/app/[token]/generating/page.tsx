@@ -3,19 +3,51 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const SEC = "/api/generate/section";
 const STEPS = [
-  { key: "step1", label: "Casting your natal chart",           pct: 10, endpoint: "/api/generate/step1" },
-  { key: "step2", label: "Reading your body & nervous system", pct: 35, endpoint: "/api/generate/step2" },
-  { key: "step3", label: "Building your daily protocols",      pct: 60, endpoint: "/api/generate/step3" },
-  { key: "step4", label: "Mapping your mission & life cycles", pct: 85, endpoint: "/api/generate/step4" },
+  { key: "s00", label: "Calculating your natal chart",       pct:  5, endpoint: SEC, params: { section: 0 } },
+  { key: "s01", label: "Physical appearance & body",         pct: 11, endpoint: SEC, params: { section: 1 } },
+  { key: "s02", label: "Nervous system analysis",            pct: 17, endpoint: SEC, params: { section: 2 } },
+  { key: "s03", label: "Daily energy protocol",              pct: 23, endpoint: SEC, params: { section: 3 } },
+  { key: "s04", label: "Expression & communication",         pct: 29, endpoint: SEC, params: { section: 4 } },
+  { key: "s05", label: "Nutrition & supplements",            pct: 35, endpoint: SEC, params: { section: 5 } },
+  { key: "s06", label: "Sport & movement week plan",         pct: 41, endpoint: SEC, params: { section: 6 } },
+  { key: "s07", label: "Gut health protocol",                pct: 47, endpoint: SEC, params: { section: 7 } },
+  { key: "s08", label: "Brain optimization",                 pct: 53, endpoint: SEC, params: { section: 8 } },
+  { key: "s09", label: "Strengths, weaknesses & shadow",     pct: 59, endpoint: SEC, params: { section: 9 } },
+  { key: "s10", label: "Career & life mission",              pct: 65, endpoint: SEC, params: { section: 10 } },
+  { key: "s11", label: "Relationships & social life",        pct: 71, endpoint: SEC, params: { section: 11 } },
+  { key: "s12", label: "Moon calendar & annual cycles",      pct: 77, endpoint: SEC, params: { section: 12 } },
+  { key: "s13", label: "Superhuman protocols & rituals",     pct: 82, endpoint: SEC, params: { section: 13 } },
+  { key: "s14", label: "Chinese astrology & TCM",            pct: 88, endpoint: SEC, params: { section: 14 } },
+  { key: "s15", label: "Annual cycles & Saturn",             pct: 93, endpoint: SEC, params: { section: 15 } },
+  { key: "s16", label: "Your superhuman synthesis",          pct: 97, endpoint: SEC, params: { section: 16 } },
 ];
 
 const STATUS_TO_STEP: Record<string, number> = {
-  pending:               0,
-  generating_chart:      0,
-  generating_health:     1,
-  generating_protocols:  2,
-  generating_mission:    3,
+  pending:              0,
+  // legacy statuses — restart from beginning
+  generating_chart:     0,
+  generating_health:    0,
+  generating_protocols: 0,
+  generating_mission:   0,
+  // new per-section statuses
+  section_0:            1,
+  section_1:            2,
+  section_2:            3,
+  section_3:            4,
+  section_4:            5,
+  section_5:            6,
+  section_6:            7,
+  section_7:            8,
+  section_8:            9,
+  section_9:            10,
+  section_10:           11,
+  section_11:           12,
+  section_12:           13,
+  section_13:           14,
+  section_14:           15,
+  section_15:           16,
 };
 
 export default function GeneratingPage({
@@ -96,7 +128,7 @@ export default function GeneratingPage({
           const res = await fetch(step.endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token }),
+            body: JSON.stringify({ token, ...step.params }),
           });
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
@@ -186,22 +218,25 @@ export default function GeneratingPage({
             {isDone ? "Your blueprint is ready" : isWaiting ? "Confirming payment…" : step.label}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 340 }}>
+          {/* Section progress: show a window of ±2 around the current step */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 340 }}>
             {STEPS.map((s, i) => {
               const done = isDone || (phase === "running" && i < currentStep);
               const active = phase === "running" && i === currentStep;
+              const visible = isDone || Math.abs(i - currentStep) <= 2 || done;
+              if (!visible) return null;
               return (
-                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{
-                    width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                    background: done ? "#16a085" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.15)",
+                    width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                    background: done ? "#16a085" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.12)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     transition: "background 0.4s ease",
                   }}>
-                    {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                    {active && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--bg)", animation: "pulse 1.4s ease infinite" }} />}
+                    {done && <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    {active && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--bg)", animation: "pulse 1.4s ease infinite" }} />}
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: done ? "rgba(255,255,255,0.5)" : active ? "#fff" : "rgba(255,255,255,0.25)", transition: "color 0.4s ease" }}>
+                  <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: done ? "rgba(255,255,255,0.4)" : active ? "#fff" : "rgba(255,255,255,0.2)", transition: "color 0.4s ease" }}>
                     {s.label}
                   </span>
                 </div>
