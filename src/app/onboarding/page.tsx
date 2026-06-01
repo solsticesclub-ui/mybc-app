@@ -71,17 +71,14 @@ export default function OnboardingPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label>
-              Full birth name{" "}
-              <span style={{ fontWeight: 400, opacity: 0.6 }}>(as on your ID or birth certificate)</span>
-            </label>
+            <label>Your first name</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="e.g. Sofia Marie Dupont"
+              placeholder="e.g. Sofia"
               required
-              autoComplete="name"
+              autoComplete="given-name"
             />
           </div>
 

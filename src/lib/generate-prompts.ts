@@ -21,7 +21,7 @@ export async function callClaude(prompt: string): Promise<string> {
 }
 
 export function birthCtx(p: { name: string; birth_date: string; birth_time: string; birth_place: string; language: string }) {
-  return `FULL BIRTH NAME (as on ID — use for numerology): ${p.name}
+  return `PERSON: ${p.name}
 DATE OF BIRTH: ${p.birth_date}
 TIME OF BIRTH: ${p.birth_time}
 PLACE OF BIRTH: ${p.birth_place}
