@@ -1,94 +1,35 @@
 -- ============================================================
--- MYBC — Supabase schema
--- Run this in the Supabase SQL editor
+-- MYBC schema v2 — token-based identity (no Supabase Auth)
+-- Run this in the Supabase SQL editor to replace the old schema.
 -- ============================================================
 
--- Enable UUID extension (already on by default in Supabase)
-create extension if not exists "uuid-ossp";
-
--- ── profiles ──────────────────────────────────────────────────
--- Extends auth.users. Created after email confirmation.
-create table if not exists public.profiles (
-  id          uuid references auth.users(id) on delete cascade primary key,
-  name        text        not null,
-  birth_date  date        not null,
-  birth_time  time        not null,
-  birth_place text        not null,
-  birth_lat   numeric,
-  birth_lng   numeric,
-  language    text        not null default 'English',
-  created_at  timestamptz not null default now()
-);
-
-alter table public.profiles enable row level security;
-
-create policy "Users can read own profile"
-  on public.profiles for select
-  using (auth.uid() = id);
-
-create policy "Users can insert own profile"
-  on public.profiles for insert
-  with check (auth.uid() = id);
-
-create policy "Users can update own profile"
-  on public.profiles for update
-  using (auth.uid() = id);
-
--- ── subscriptions ──────────────────────────────────────────────
-create table if not exists public.subscriptions (
-  id                      uuid        primary key default gen_random_uuid(),
-  user_id                 uuid        not null references auth.users(id) on delete cascade,
-  stripe_customer_id      text        unique,
-  stripe_subscription_id  text        unique,
-  status                  text        not null default 'incomplete',
-  current_period_end      timestamptz,
-  created_at              timestamptz not null default now(),
-  updated_at              timestamptz not null default now()
-);
-
-alter table public.subscriptions enable row level security;
-
-create policy "Users can read own subscription"
-  on public.subscriptions for select
-  using (auth.uid() = user_id);
-
--- Service role can do anything (used by webhook handler)
-create policy "Service role full access on subscriptions"
-  on public.subscriptions for all
-  using (true)
-  with check (true);
-
--- ── reports ────────────────────────────────────────────────────
-create table if not exists public.reports (
-  id                  uuid        primary key default gen_random_uuid(),
-  user_id             uuid        not null references auth.users(id) on delete cascade unique,
-  generation_status   text        not null default 'pending',
-  data                jsonb,
-  generated_at        timestamptz,
+-- Users: each row is one customer. token IS their identity (it's the URL key).
+create table if not exists public.users (
+  token               uuid        primary key default gen_random_uuid(),
+  email               text        not null,
+  name                text        not null,
+  birth_date          date        not null,
+  birth_time          time        not null,
+  birth_place         text        not null,
+  language            text        not null default 'English',
+  status              text        not null default 'pending',
+  -- pending | active | past_due | cancelled
+  ls_customer_id      text,
+  ls_subscription_id  text,
   created_at          timestamptz not null default now()
 );
 
-alter table public.reports enable row level security;
+-- Reports: one per user. Stores both structured JSON data and prose report.
+create table if not exists public.reports (
+  id                uuid        primary key default gen_random_uuid(),
+  user_token        uuid        not null references public.users(token) on delete cascade unique,
+  generation_status text        not null default 'pending',
+  -- pending | generating_chart | generating_health | generating_protocols | generating_mission | complete | failed
+  data              jsonb,
+  generated_at      timestamptz,
+  created_at        timestamptz not null default now()
+);
 
-create policy "Users can read own report"
-  on public.reports for select
-  using (auth.uid() = user_id);
-
--- Service role can do anything
-create policy "Service role full access on reports"
-  on public.reports for all
-  using (true)
-  with check (true);
-
--- ── Helper: get active subscription status for a user ──────────
-create or replace function public.get_user_subscription_status(uid uuid)
-returns text
-language sql
-security definer
-as $$
-  select status
-  from public.subscriptions
-  where user_id = uid
-  order by created_at desc
-  limit 1;
-$$;
+-- No RLS — all server access uses the service role key which bypasses RLS.
+alter table public.users   disable row level security;
+alter table public.reports disable row level security;

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 const LANGUAGES = [
   { value: "English",    label: "English" },
@@ -21,6 +20,7 @@ export default function OnboardingPage() {
 
   const [form, setForm] = useState({
     name: "",
+    email: "",
     birthDate: "",
     birthTime: "",
     birthPlace: "",
@@ -36,41 +36,27 @@ export default function OnboardingPage() {
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-
-    // Save profile
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: user.id,
-      name: form.name,
-      birth_date: form.birthDate,
-      birth_time: form.birthTime,
-      birth_place: form.birthPlace,
-      language: form.language,
-    });
-
-    if (profileError) {
-      setError(profileError.message);
-      setLoading(false);
-      return;
-    }
-
-    // Create LemonSqueezy checkout
-    const res = await fetch("/api/lemonsqueezy/create-checkout", {
+    const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, email: user.email, name: form.name }),
+      body: JSON.stringify({
+        email: form.email,
+        name: form.name,
+        birthDate: form.birthDate,
+        birthTime: form.birthTime,
+        birthPlace: form.birthPlace,
+        language: form.language,
+      }),
     });
 
     if (!res.ok) {
-      setError("Could not open checkout. Please try again.");
+      setError("Something went wrong. Please try again.");
       setLoading(false);
       return;
     }
 
-    const { url } = await res.json();
-    window.location.href = url;
+    const { token } = await res.json();
+    router.push(`/app/${token}/generating`);
   }
 
   return (
@@ -93,6 +79,18 @@ export default function OnboardingPage() {
               placeholder="e.g. Sofia"
               required
               autoComplete="given-name"
+            />
+          </div>
+
+          <div className="auth-field">
+            <label>Your email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="e.g. sofia@example.com"
+              required
+              autoComplete="email"
             />
           </div>
 
@@ -152,12 +150,12 @@ export default function OnboardingPage() {
           {error && <div className="auth-error">{error}</div>}
 
           <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? "Opening checkout…" : "Continue to payment →"}
+            {loading ? "Creating your profile…" : "Generate my report →"}
           </button>
         </form>
 
         <p className="auth-sub" style={{ marginTop: 16, fontSize: 12, opacity: 0.5 }}>
-          €9/month · 3-month minimum · cancel any time
+          Beta access · free for now · keep this page bookmarked
         </p>
       </div>
     </div>

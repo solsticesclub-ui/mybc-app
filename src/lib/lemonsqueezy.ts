@@ -1,29 +1,23 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
-/**
- * Build a LemonSqueezy checkout URL by appending pre-fill params
- * to the existing checkout buy link. No API key required.
- *
- * LS passes checkout[custom] fields back in webhook meta.custom_data.
- */
 export function buildCheckoutUrl(opts: {
-  userId: string;
+  token: string;
   email: string;
   name: string;
+  appUrl: string;
 }): string {
   const base = process.env.LEMONSQUEEZY_CHECKOUT_URL!;
+  const redirectUrl = `${opts.appUrl}/app/${opts.token}/generating`;
   const params = new URLSearchParams({
     "checkout[email]": opts.email,
     "checkout[name]": opts.name,
-    "checkout[custom][supabase_user_id]": opts.userId,
+    "checkout[custom][user_token]": opts.token,
+    "checkout[redirect]": redirectUrl,
   });
   return `${base}?${params.toString()}`;
 }
 
-export function verifyWebhookSignature(
-  rawBody: string,
-  signature: string | null
-): boolean {
+export function verifyWebhookSignature(rawBody: string, signature: string | null): boolean {
   if (!signature || !process.env.LEMONSQUEEZY_WEBHOOK_SECRET) return false;
   const hmac = createHmac("sha256", process.env.LEMONSQUEEZY_WEBHOOK_SECRET);
   const digest = hmac.update(rawBody).digest("hex");

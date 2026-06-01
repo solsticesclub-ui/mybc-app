@@ -1,22 +1,12 @@
 export interface UserProfile {
-  id: string;
+  token: string;        // the UUID that IS the user (their URL key)
+  email: string;
   name: string;
-  birth_date: string;       // ISO date string "YYYY-MM-DD"
-  birth_time: string;       // "HH:MM"
+  birth_date: string;   // "YYYY-MM-DD"
+  birth_time: string;   // "HH:MM"
   birth_place: string;
-  birth_lat: number | null;
-  birth_lng: number | null;
-  language: string;         // e.g. "English", "French"
-  created_at: string;
-}
-
-export interface Subscription {
-  id: string;
-  user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  status: "active" | "past_due" | "canceled" | "trialing" | "incomplete";
-  current_period_end: string | null;
+  language: string;     // e.g. "English", "French"
+  status: string;       // pending | active | past_due | cancelled
   created_at: string;
 }
 
@@ -78,8 +68,8 @@ export interface Career {
 }
 
 export interface MoonDay {
-  date: string;        // ISO string
-  phase: number;       // 0..1
+  date: string;
+  phase: number;
   phaseName: string;
   scores: { Energy: number; Business: number; Body: number; Social: number };
 }
@@ -108,15 +98,12 @@ export interface CompatibilityEntry {
 // ── Master report shape stored in the DB ──────────────────────
 
 export interface ReportData {
-  // Chart data
   chart_signs: ChartSign[];
   chart_distribution: {
     elements: DistributionItem[];
     modes: DistributionItem[];
     summary: { plain: string; expert: string };
   };
-
-  // Section quick-view data (structured)
   daily_protocol: Record<string, DailyPhase>;
   today_default: { moonSign: string; do: string; avoid: string; energy: number };
   strengths: Strength[];
@@ -177,15 +164,13 @@ export interface ReportData {
     reset48: { l: string; n: string }[];
     testing: { l: string; cadence: string }[];
   };
-
-  // Full prose report (15 chapters)
   report_content: Record<string, Block[]>;
 }
 
 export interface Report {
   id: string;
-  user_id: string;
-  generation_status: "pending" | "generating" | "complete" | "failed";
+  user_token: string;
+  generation_status: "pending" | "generating_chart" | "generating_health" | "generating_protocols" | "generating_mission" | "complete" | "failed";
   data: ReportData | null;
   generated_at: string | null;
   created_at: string;

@@ -1,14 +1,14 @@
 import type { Report, UserProfile, ReportData } from "./types";
 
 export const DEMO_PROFILE: UserProfile = {
-  id: "demo-user",
+  token: "demo",
+  email: "demo@mybc.app",
   name: "Fanny",
   birth_date: "1998-06-10",
   birth_time: "08:03",
   birth_place: "Verviers, Belgium",
-  birth_lat: 50.5912,
-  birth_lng: 5.8641,
   language: "English",
+  status: "active",
   created_at: "2026-01-01T00:00:00Z",
 };
 
@@ -808,7 +808,7 @@ const DATA: ReportData = {
 
 export const DEMO_REPORT: Report = {
   id: "demo-report",
-  user_id: "demo-user",
+  user_token: "demo",
   generation_status: "complete",
   data: DATA,
   generated_at: "2026-04-21T10:00:00Z",
