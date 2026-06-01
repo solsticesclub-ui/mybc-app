@@ -30,24 +30,36 @@ export async function POST(request: NextRequest) {
       const raw = await callClaude(promptSection0(user), maxTokens);
       const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default">;
 
-      const { error: dbErr } = await supabase.from("reports").upsert(
-        {
-          user_token: token,
-          generation_status: "section_0",
-          data: { ...chartData, report_content: {} },
-        },
-        { onConflict: "user_token" }
-      );
+      const { data: existing } = await supabase
+        .from("reports")
+        .select("user_token")
+        .eq("user_token", token)
+        .maybeSingle();
+
+      let dbErr;
+      if (existing) {
+        ({ error: dbErr } = await supabase
+          .from("reports")
+          .update({ generation_status: "section_0", data: { ...chartData, report_content: {} } })
+          .eq("user_token", token));
+      } else {
+        ({ error: dbErr } = await supabase
+          .from("reports")
+          .insert({ user_token: token, generation_status: "section_0", data: { ...chartData, report_content: {} } }));
+      }
       if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`);
 
       return NextResponse.json({ ok: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      // best-effort status update (may be no row yet if this is the first attempt)
-      await supabase.from("reports").upsert(
-        { user_token: token, generation_status: "failed" },
-        { onConflict: "user_token" }
-      );
+      // best-effort status update — update if row exists, insert if not
+      const { data: existingOnErr } = await supabase
+        .from("reports").select("user_token").eq("user_token", token).maybeSingle();
+      if (existingOnErr) {
+        await supabase.from("reports").update({ generation_status: "failed" }).eq("user_token", token);
+      } else {
+        await supabase.from("reports").insert({ user_token: token, generation_status: "failed" });
+      }
       return NextResponse.json({ error: `Section 0 error: ${message}` }, { status: 500 });
     }
   }
