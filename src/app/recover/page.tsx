@@ -43,7 +43,7 @@ export default function RecoverPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", padding: "0 24px" }}>
       <div className="auth-card" style={{ maxWidth: 440 }}>
-        <div className="auth-logo">MYBC</div>
+        <img src="/logo-dark.png" alt="MYBC" style={{ height: 36, width: "auto", marginBottom: 8 }} />
         <div className="auth-title">Find your app</div>
         <p className="auth-sub">
           Enter the email you used when you signed up. Your personal app URL will appear below.

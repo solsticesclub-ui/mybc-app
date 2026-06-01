@@ -62,7 +62,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
       <div className="auth-card" style={{ maxWidth: 460 }}>
-        <div className="auth-logo">MYBC</div>
+        <img src="/logo-dark.png" alt="MYBC" style={{ height: 36, width: "auto", marginBottom: 8 }} />
         <div className="auth-title">Your birth data</div>
         <p className="auth-sub">
           We use this to cast your natal chart and generate your full personalised report.
@@ -71,14 +71,17 @@ export default function OnboardingPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label>Your first name</label>
+            <label>
+              Full birth name{" "}
+              <span style={{ fontWeight: 400, opacity: 0.6 }}>(as on your ID or birth certificate)</span>
+            </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="e.g. Sofia"
+              placeholder="e.g. Sofia Marie Dupont"
               required
-              autoComplete="given-name"
+              autoComplete="name"
             />
           </div>
 

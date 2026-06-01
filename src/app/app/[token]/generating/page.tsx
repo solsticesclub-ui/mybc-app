@@ -125,7 +125,7 @@ export default function GeneratingPage({
     <div className="min-h-screen flex flex-col items-center justify-center gap-8"
       style={{ background: "var(--bg)", fontFamily: "var(--font-sans)", padding: "0 24px" }}>
 
-      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "0.18em", color: "#fff" }}>MYBC</div>
+      <img src="/logo-light.png" alt="MYBC" style={{ height: 32, width: "auto" }} />
 
       {/* Personal URL — shown from the start so user can bookmark immediately */}
       <div style={{
