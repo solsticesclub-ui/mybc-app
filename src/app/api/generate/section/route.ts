@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   if (section === 0) {
     try {
       const raw = await callClaude(promptSection0(user), maxTokens);
-      const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default">;
+      const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default" | "chart_planets" | "chart_houses" | "chart_aspects">;
 
       const { data: existing } = await supabase
         .from("reports")

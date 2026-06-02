@@ -95,6 +95,32 @@ export interface CompatibilityEntry {
   note: string;
 }
 
+export interface ChartPlanet {
+  planet: string;   // "Sun" | "Moon" | "Mercury" | ... | "ASC" | "MC" | "North Node" | "South Node"
+  degree: string;   // "19°12'"
+  sign: string;     // "Gemini"
+  house: number;    // 1–12
+  quality: string;  // "Mutable Air"
+  retrograde?: boolean;
+  note: string;     // one-line interpretation grounded in this placement
+}
+
+export interface ChartHouse {
+  house: number;    // 1–12
+  sign: string;     // sign on cusp
+  planets: string[]; // planet names inside (empty array if none)
+  strength: "Very Strong" | "Strong" | "Medium" | "Weak" | "Empty";
+  theme: string;    // one-line meaning for this person
+}
+
+export interface ChartAspect {
+  p1: string;       // planet name
+  p2: string;       // planet name
+  type: "conjunction" | "sextile" | "square" | "trine" | "opposition";
+  orb: string;      // e.g. "5°"
+  note: string;     // one-line interpretation
+}
+
 // ── Master report shape stored in the DB ──────────────────────
 
 export interface ReportData {
@@ -104,6 +130,9 @@ export interface ReportData {
     modes: DistributionItem[];
     summary: { plain: string; expert: string };
   };
+  chart_planets?: ChartPlanet[];   // full per-planet data: degree, house, quality, note
+  chart_houses?: ChartHouse[];     // all 12 houses: cusp sign, planets, strength, theme
+  chart_aspects?: ChartAspect[];   // major aspects orb ≤ 8°
   daily_protocol: Record<string, DailyPhase>;
   today_default: { moonSign: string; do: string; avoid: string; energy: number };
   strengths: Strength[];

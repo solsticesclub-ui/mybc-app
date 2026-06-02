@@ -50,17 +50,43 @@ TODAY'S DATE: ${new Date().toISOString().slice(0, 10)}`;
 }
 
 export function chartSummaryFromData(data: ReportData): string {
+  const el = data.chart_distribution.elements.map((e) => `${e.l} ${e.v}%`).join(", ");
+  const modes = data.chart_distribution.modes.map((m) => `${m.l} ${m.v}%`).join(", ");
+
+  // Rich format — available for all new reports
+  if (data.chart_planets?.length) {
+    const planets = data.chart_planets
+      .map((p) => {
+        const retro = p.retrograde ? "℞" : "";
+        return `${p.planet} ${p.degree}${retro} ${p.sign} H${p.house}`;
+      })
+      .join("; ");
+
+    const houses = data.chart_houses
+      ?.filter((h) => h.planets.length > 0 || h.strength === "Very Strong")
+      .map((h) => `H${h.house} ${h.sign} (${h.strength}${h.planets.length ? ": " + h.planets.join(", ") : ""})`)
+      .join("; ") ?? "";
+
+    const aspects = data.chart_aspects?.length
+      ? " Aspects: " + data.chart_aspects
+          .map((a) => `${a.p1} ${a.type} ${a.p2} ${a.orb}`)
+          .join(", ") + "."
+      : "";
+
+    return `Planets: ${planets}. Elements: ${el}. Modes: ${modes}. Houses: ${houses}.${aspects} ${data.chart_distribution.summary.expert}`;
+  }
+
+  // Fallback for existing users generated before this update
   const placed = data.chart_signs
     .filter((s) => s.planets.length > 0)
     .map((s) => `${s.planets.join(", ")} in ${s.sign}`)
     .join("; ");
-  const el = data.chart_distribution.elements.map((e) => `${e.l} ${e.v}%`).join(", ");
   return `Placements: ${placed}. Elements: ${el}. ${data.chart_distribution.summary.expert}`;
 }
 
 // ── Per-section token limits ────────────────────────────────────
 export const SECTION_MAX_TOKENS: Record<number, number> = {
-  0:  3000,
+  0:  6000,
   1:  4500,
   2:  4000,
   3:  5500,
@@ -70,7 +96,7 @@ export const SECTION_MAX_TOKENS: Record<number, number> = {
   7:  4500,
   8:  4500,
   9:  8000,
-  10: 7000,
+  10: 9000,
   11: 5500,
   12: 7000,
   13: 5500,
@@ -79,13 +105,14 @@ export const SECTION_MAX_TOKENS: Record<number, number> = {
   16: 3500,
 };
 
-// ── Section 0 — natal chart structured data (no prose) ─────────
+// ── Section 0 — full natal chart data (no prose) ───────────────
 export function promptSection0(p: Parameters<typeof birthCtx>[0]): string {
   return `${birthCtx(p)}
 
-Calculate the exact Placidus natal chart. Return JSON with these exact fields only:
+Using the Placidus house system, calculate the complete natal chart. Return ONLY valid JSON with these exact fields:
+
 {
-  "chart_signs":[
+  "chart_signs": [
     {"sign":"Aries","glyph":"♈","planets":[],"count":0},
     {"sign":"Taurus","glyph":"♉","planets":[],"count":0},
     {"sign":"Gemini","glyph":"♊","planets":[],"count":0},
@@ -99,14 +126,63 @@ Calculate the exact Placidus natal chart. Return JSON with these exact fields on
     {"sign":"Aquarius","glyph":"♒","planets":[],"count":0},
     {"sign":"Pisces","glyph":"♓","planets":[],"count":0}
   ],
-  "chart_distribution":{
-    "elements":[{"l":"Fire","v":0,"gloss":"..."},{"l":"Earth","v":0,"gloss":"..."},{"l":"Air","v":0,"gloss":"..."},{"l":"Water","v":0,"gloss":"..."}],
-    "modes":[{"l":"Cardinal","v":0,"gloss":"..."},{"l":"Fixed","v":0,"gloss":"..."},{"l":"Mutable","v":0,"gloss":"..."}],
-    "summary":{"plain":"...","expert":"..."}
+  "chart_distribution": {
+    "elements": [
+      {"l":"Fire","v":0,"gloss":"one-line interpretation for this person"},
+      {"l":"Earth","v":0,"gloss":"..."},
+      {"l":"Air","v":0,"gloss":"..."},
+      {"l":"Water","v":0,"gloss":"..."}
+    ],
+    "modes": [
+      {"l":"Cardinal","v":0,"gloss":"..."},
+      {"l":"Fixed","v":0,"gloss":"..."},
+      {"l":"Mutable","v":0,"gloss":"..."}
+    ],
+    "summary": {"plain":"one accessible sentence about the chart balance","expert":"one technical sentence naming the dominant pattern"}
   },
-  "today_default":{"moonSign":"...","do":"...","avoid":"...","energy":5}
+  "today_default": {"moonSign":"current moon sign on TODAY'S DATE","do":"one specific action for today","avoid":"one thing to avoid today","energy":5},
+  "chart_planets": [
+    {"planet":"Sun","degree":"0°00'","sign":"...","house":1,"quality":"Mutable Air","retrograde":false,"note":"one-line meaning grounded in this placement"},
+    {"planet":"Moon","degree":"0°00'","sign":"...","house":1,"quality":"Fixed Fire","retrograde":false,"note":"..."},
+    {"planet":"ASC","degree":"0°00'","sign":"...","house":1,"quality":"Cardinal Water","retrograde":false,"note":"..."},
+    {"planet":"MC","degree":"0°00'","sign":"...","house":10,"quality":"Mutable Water","retrograde":false,"note":"..."},
+    {"planet":"Mercury","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Venus","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Mars","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Jupiter","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Saturn","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Uranus","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Neptune","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"Pluto","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"North Node","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
+    {"planet":"South Node","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."}
+  ],
+  "chart_houses": [
+    {"house":1,"sign":"...","planets":[],"strength":"Medium","theme":"one-line meaning for this person"},
+    {"house":2,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":3,"sign":"...","planets":[],"strength":"Weak","theme":"..."},
+    {"house":4,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":5,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":6,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":7,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":8,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":9,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
+    {"house":10,"sign":"...","planets":[],"strength":"Very Strong","theme":"..."},
+    {"house":11,"sign":"...","planets":[],"strength":"Weak","theme":"..."},
+    {"house":12,"sign":"...","planets":[],"strength":"Very Strong","theme":"..."}
+  ],
+  "chart_aspects": [
+    {"p1":"Sun","p2":"Jupiter","type":"sextile","orb":"5°","note":"one-line interpretation"},
+    {"p1":"Moon","p2":"Pluto","type":"trine","orb":"7°","note":"..."}
+  ]
 }
-Place all traditional planets (Sun Moon Mercury Venus Mars Jupiter Saturn Uranus Neptune Pluto) + ASC + MC + North Node + South Node into their correct signs. today_default reflects the moon sign on today's date.`;
+
+Rules:
+- chart_signs: place all 14 points (Sun Moon Mercury Venus Mars Jupiter Saturn Uranus Neptune Pluto ASC MC North Node South Node) into their correct signs.
+- chart_planets: use exact degrees from ephemeris. quality = Modality + Element of the sign (e.g. "Mutable Air"). retrograde = true only for outer planets when applicable.
+- chart_houses: strength = "Very Strong" (3+ planets or contains ASC/MC/Sun/Moon) | "Strong" (2 planets or angular) | "Medium" (1 planet) | "Weak" (no planets, succedent) | "Empty" (no planets, cadent). planets[] = names of planets in that house.
+- chart_aspects: include only major aspects with orb ≤ 8° between the 10 traditional planets + ASC + MC. Types: conjunction, sextile, square, trine, opposition.
+- today_default: moonSign and scores reflect the moon position on TODAY'S DATE specifically.`;
 }
 
 // ── Sections 1–16 — prose blocks + tile data ───────────────────
@@ -186,11 +262,11 @@ Return: {"blocks":[...],"tile":{"strengths":[{"title":"[strength name]","tag":"S
 
     // ── 10 · Career & Life Mission ────────────────────────────
     case 10: return h + `SECTION 10 — CAREER & LIFE MISSION
-Prose (minimum 350 words): North Node analysis (mission, karmic direction, toward/away). Saturn cycle timeline with ages. Current life phase meaning. Worst possible careers and why. Optimal work environment specific to this chart.
+Prose (minimum 400 words): North Node analysis (mission, karmic direction, toward/away). Saturn cycle timeline with ages. Current life phase meaning. Worst possible careers and why (minimum 3, each with placement justification). Optimal work environment specific to this chart.
 
-Also return structured tile for the 5 best careers.
+Also return structured tile for the 10 best careers — each with astrological justification.
 
-Return: {"blocks":[...],"tile":{"careers":[{"n":"01","title":"[career]","sub":"[sub-role or specialty]","plain":"[1 accessible sentence]","expert":"[1 sentence with placement justification]","sources":["[placement]","[placement]"],"practice":["[action to move toward this]","[action]"]},{"n":"02","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"03","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"04","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"05","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]}],"career_mission":{"plain":"[1 clear mission statement]","expert":"[1 sentence with North Node placement]"}}}`;
+Return: {"blocks":[...],"tile":{"careers":[{"n":"01","title":"[career]","sub":"[sub-role or specialty]","plain":"[1 accessible sentence]","expert":"[1 sentence with placement justification]","sources":["[placement]","[placement]"],"practice":["[action to move toward this]","[action]"]},{"n":"02","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"03","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"04","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"05","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"06","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"07","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"08","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"09","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]},{"n":"10","title":"...","sub":"...","plain":"...","expert":"...","sources":["..."],"practice":["..."]}],"career_mission":{"plain":"[1 clear mission statement]","expert":"[1 sentence with North Node placement]"}}}`;
 
     // ── 11 · Relationships ────────────────────────────────────
     case 11: return h + `SECTION 11 — RELATIONSHIPS & SOCIAL LIFE
