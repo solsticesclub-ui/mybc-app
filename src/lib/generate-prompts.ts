@@ -18,7 +18,13 @@ export async function callClaude(prompt: string, maxTokens = 6000): Promise<stri
         messages: [{ role: "user", content: prompt }],
       });
       const raw = (msg.content[0] as { type: string; text: string }).text.trim();
-      return raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+      // Strip markdown fences first
+      const stripped = raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+      // Extract the outermost {...} block in case Claude added prose before/after
+      const start = stripped.indexOf("{");
+      const end = stripped.lastIndexOf("}");
+      if (start === -1 || end === -1 || end <= start) throw new Error("No JSON object found in response");
+      return stripped.slice(start, end + 1);
     } catch (err) {
       const isRetryable =
         err instanceof Anthropic.APIError && (err.status === 529 || err.status === 503 || err.status === 500);
