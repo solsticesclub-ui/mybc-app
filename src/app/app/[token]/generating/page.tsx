@@ -3,52 +3,25 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const SEC = "/api/generate/section";
-const STEPS = [
-  { key: "s00", label: "Calculating your natal chart",       pct:  5, endpoint: SEC, params: { section: 0 } },
-  { key: "s01", label: "Physical appearance & body",         pct: 11, endpoint: SEC, params: { section: 1 } },
-  { key: "s02", label: "Nervous system analysis",            pct: 17, endpoint: SEC, params: { section: 2 } },
-  { key: "s03", label: "Daily energy protocol",              pct: 23, endpoint: SEC, params: { section: 3 } },
-  { key: "s04", label: "Expression & communication",         pct: 29, endpoint: SEC, params: { section: 4 } },
-  { key: "s05", label: "Nutrition & supplements",            pct: 35, endpoint: SEC, params: { section: 5 } },
-  { key: "s06", label: "Sport & movement week plan",         pct: 41, endpoint: SEC, params: { section: 6 } },
-  { key: "s07", label: "Gut health protocol",                pct: 47, endpoint: SEC, params: { section: 7 } },
-  { key: "s08", label: "Brain optimization",                 pct: 53, endpoint: SEC, params: { section: 8 } },
-  { key: "s09", label: "Strengths, weaknesses & shadow",     pct: 59, endpoint: SEC, params: { section: 9 } },
-  { key: "s10", label: "Career & life mission",              pct: 65, endpoint: SEC, params: { section: 10 } },
-  { key: "s11", label: "Relationships & social life",        pct: 71, endpoint: SEC, params: { section: 11 } },
-  { key: "s12", label: "Moon calendar & annual cycles",      pct: 77, endpoint: SEC, params: { section: 12 } },
-  { key: "s13", label: "Superhuman protocols & rituals",     pct: 82, endpoint: SEC, params: { section: 13 } },
-  { key: "s14", label: "Chinese astrology & TCM",            pct: 88, endpoint: SEC, params: { section: 14 } },
-  { key: "s15", label: "Annual cycles & Saturn",             pct: 93, endpoint: SEC, params: { section: 15 } },
-  { key: "s16", label: "Your superhuman synthesis",          pct: 97, endpoint: SEC, params: { section: 16 } },
+// Sections grouped into 5 parallel batches.
+// Within each batch all sections fire simultaneously; batches run sequentially.
+const BATCHES = [
+  { key: "b0", label: "Calculating your natal chart",           pct:  5, sections: [0] },
+  { key: "b1", label: "Body, nervous system & daily protocols", pct: 28, sections: [1, 2, 3, 4] },
+  { key: "b2", label: "Nutrition, sport, gut & brain",          pct: 52, sections: [5, 6, 7, 8] },
+  { key: "b3", label: "Strengths, career, love & cycles",       pct: 76, sections: [9, 10, 11, 12] },
+  { key: "b4", label: "Protocols, astrology & synthesis",       pct: 97, sections: [13, 14, 15, 16] },
 ];
 
-const STATUS_TO_STEP: Record<string, number> = {
-  pending:              0,
-  // legacy statuses — restart from beginning
-  generating_chart:     0,
-  generating_health:    0,
-  generating_protocols: 0,
-  generating_mission:   0,
-  // new per-section statuses
-  section_0:            1,
-  section_1:            2,
-  section_2:            3,
-  section_3:            4,
-  section_4:            5,
-  section_5:            6,
-  section_6:            7,
-  section_7:            8,
-  section_8:            9,
-  section_9:            10,
-  section_10:           11,
-  section_11:           12,
-  section_12:           13,
-  section_13:           14,
-  section_14:           15,
-  section_15:           16,
-};
+function getStartBatch(status: string | null): number {
+  if (!status || status === "pending") return 0;
+  if (["generating_chart", "generating_health", "generating_protocols", "generating_mission", "failed"].includes(status)) return 0;
+  if (status === "section_0") return 1;
+  if (["section_1", "section_2", "section_3", "section_4"].includes(status)) return 2;
+  if (["section_5", "section_6", "section_7", "section_8"].includes(status)) return 3;
+  if (["section_9", "section_10", "section_11", "section_12"].includes(status)) return 4;
+  return 0;
+}
 
 export default function GeneratingPage({
   params,
@@ -70,7 +43,7 @@ export default function GeneratingPage({
   const [errorMsg, setErrorMsg] = useState(
     cancelled ? "Your subscription is inactive." : ""
   );
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
   const [copied, setCopied] = useState(false);
   const running = useRef(false);
 
@@ -84,10 +57,22 @@ export default function GeneratingPage({
   useEffect(() => {
     if (running.current || phase === "error") return;
 
+    async function runSection(section: number): Promise<void> {
+      const res = await fetch("/api/generate/section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, section }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Section ${section} failed`);
+      }
+    }
+
     async function run() {
       running.current = true;
 
-      // Phase 1: wait for subscription confirmation
+      // Wait for user to be active (instant for beta)
       let userStatus = "pending";
       let reportStatus: string | null = null;
 
@@ -100,7 +85,6 @@ export default function GeneratingPage({
             reportStatus = body.reportStatus;
           }
         } catch {}
-
         if (userStatus === "active" || userStatus === "cancelled") break;
         await new Promise((r) => setTimeout(r, 3000));
       }
@@ -117,32 +101,20 @@ export default function GeneratingPage({
         return;
       }
 
-      // Phase 2: run steps from where we left off
       setPhase("running");
-      const startStep = STATUS_TO_STEP[reportStatus ?? "pending"] ?? 0;
+      const startBatch = getStartBatch(reportStatus);
 
-      for (let i = startStep; i < STEPS.length; i++) {
-        setCurrentStep(i);
-        const step = STEPS[i];
-        try {
-          const res = await fetch(step.endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token, ...step.params }),
-          });
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body.error ?? `Step ${i + 1} failed`);
-          }
-        } catch (err) {
-          setPhase("error");
-          setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please refresh.");
-          return;
+      try {
+        for (let i = startBatch; i < BATCHES.length; i++) {
+          setCurrentBatch(i);
+          await Promise.all(BATCHES[i].sections.map(runSection));
         }
+        setPhase("done");
+        setTimeout(() => router.push(`/app/${token}/hub`), 1500);
+      } catch (err) {
+        setPhase("error");
+        setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       }
-
-      setPhase("done");
-      setTimeout(() => router.push(`/app/${token}/hub`), 1500);
     }
 
     run();
@@ -150,16 +122,17 @@ export default function GeneratingPage({
 
   const isDone = phase === "done";
   const isWaiting = phase === "waiting";
-  const step = STEPS[Math.min(currentStep, STEPS.length - 1)];
-  const pct = isDone ? 100 : isWaiting ? 5 : step.pct;
+  const batch = BATCHES[Math.min(currentBatch, BATCHES.length - 1)];
+  const pct = isDone ? 100 : isWaiting ? 3 : batch.pct;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8"
-      style={{ background: "var(--bg)", fontFamily: "var(--font-sans)", padding: "0 24px" }}>
-
+    <div
+      className="min-h-screen flex flex-col items-center justify-center gap-8"
+      style={{ background: "var(--bg)", fontFamily: "var(--font-sans)", padding: "0 24px" }}
+    >
       <img src="/logo-light.png" alt="MYBC" style={{ height: 32, width: "auto" }} />
 
-      {/* Personal URL — shown from the start so user can bookmark immediately */}
+      {/* Personal URL */}
       <div style={{
         width: "100%", maxWidth: 340,
         background: "rgba(255,255,255,0.06)", borderRadius: 14,
@@ -174,7 +147,8 @@ export default function GeneratingPage({
         <button
           onClick={copy}
           style={{
-            width: "100%", padding: "10px", background: copied ? "rgba(22,160,133,0.3)" : "rgba(255,255,255,0.1)",
+            width: "100%", padding: "10px",
+            background: copied ? "rgba(22,160,133,0.3)" : "rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10,
             fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer", font: "inherit",
             transition: "background 0.2s ease",
@@ -189,16 +163,16 @@ export default function GeneratingPage({
       {phase === "error" ? (
         <div style={{ textAlign: "center", maxWidth: 300 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Something went wrong</div>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }}>{errorMsg}</p>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginBottom: 16 }}>{errorMsg}</p>
           <button
-            onClick={() => { running.current = false; setPhase("waiting"); setCurrentStep(0); }}
-            style={{ marginTop: 16, background: "#fff", color: "#111", border: "none", borderRadius: 10, padding: "12px 24px", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+            onClick={() => { running.current = false; setPhase("waiting"); setCurrentBatch(0); }}
+            style={{ background: "#fff", color: "#111", border: "none", borderRadius: 10, padding: "12px 24px", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
             Try again
           </button>
         </div>
       ) : (
         <>
-          {/* Ring */}
+          {/* Progress ring */}
           <div style={{ position: "relative", width: 88, height: 88 }}>
             <svg width="88" height="88" viewBox="0 0 88 88" style={{ transform: "rotate(-90deg)" }}>
               <circle cx="44" cy="44" r="38" stroke="rgba(255,255,255,0.1)" strokeWidth="6" fill="none" />
@@ -215,29 +189,27 @@ export default function GeneratingPage({
           </div>
 
           <div style={{ fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.85)", textAlign: "center" }}>
-            {isDone ? "Your blueprint is ready" : isWaiting ? "Confirming payment…" : step.label}
+            {isDone ? "Your blueprint is ready" : isWaiting ? "Starting generation…" : batch.label}
           </div>
 
-          {/* Section progress: show a window of ±2 around the current step */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 340 }}>
-            {STEPS.map((s, i) => {
-              const done = isDone || (phase === "running" && i < currentStep);
-              const active = phase === "running" && i === currentStep;
-              const visible = isDone || Math.abs(i - currentStep) <= 2 || done;
-              if (!visible) return null;
+          {/* 5 batch steps */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 340 }}>
+            {BATCHES.map((b, i) => {
+              const done = isDone || (phase === "running" && i < currentBatch);
+              const active = phase === "running" && i === currentBatch;
               return (
-                <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div key={b.key} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{
-                    width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                    width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
                     background: done ? "#16a085" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.12)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     transition: "background 0.4s ease",
                   }}>
-                    {done && <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                    {active && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--bg)", animation: "pulse 1.4s ease infinite" }} />}
+                    {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    {active && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--bg)", animation: "pulse 1.4s ease infinite" }} />}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: done ? "rgba(255,255,255,0.4)" : active ? "#fff" : "rgba(255,255,255,0.2)", transition: "color 0.4s ease" }}>
-                    {s.label}
+                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: done ? "rgba(255,255,255,0.4)" : active ? "#fff" : "rgba(255,255,255,0.2)", transition: "color 0.4s ease" }}>
+                    {b.label}
                   </span>
                 </div>
               );
@@ -254,7 +226,7 @@ export default function GeneratingPage({
 
           {!isDone && (
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center", maxWidth: 300 }}>
-              {isWaiting ? "Waiting for payment confirmation. Keep this tab open." : "This takes 3–5 minutes. Keep this tab open."}
+              {isWaiting ? "Preparing your profile…" : "Takes 3–5 minutes. Keep this tab open."}
             </p>
           )}
         </>

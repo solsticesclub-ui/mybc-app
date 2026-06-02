@@ -24,17 +24,14 @@ export async function POST(request: NextRequest) {
 
   const maxTokens = SECTION_MAX_TOKENS[section as number] ?? 4000;
 
-  // ── Section 0: generates chart structured data, no prior report needed ──
+  // ── Section 0: creates the report row, no prior data needed ───────────
   if (section === 0) {
     try {
       const raw = await callClaude(promptSection0(user), maxTokens);
       const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default">;
 
       const { data: existing } = await supabase
-        .from("reports")
-        .select("user_token")
-        .eq("user_token", token)
-        .maybeSingle();
+        .from("reports").select("user_token").eq("user_token", token).maybeSingle();
 
       let dbErr;
       if (existing) {
@@ -52,7 +49,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      // best-effort status update — update if row exists, insert if not
       const { data: existingOnErr } = await supabase
         .from("reports").select("user_token").eq("user_token", token).maybeSingle();
       if (existingOnErr) {
@@ -64,19 +60,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // ── Sections 1–16: require chart data from section 0 ──────────────────
+  // ── Sections 1–16: atomic JSONB merge via RPC (safe for parallel calls) ─
   const { data: report } = await supabase
-    .from("reports")
-    .select("data")
-    .eq("user_token", token)
-    .single();
+    .from("reports").select("data").eq("user_token", token).single();
 
   if (!report?.data) {
     return NextResponse.json({ error: "Chart data missing — run section 0 first" }, { status: 404 });
   }
 
-  const existingData = report.data as ReportData;
-  const chartSummary = chartSummaryFromData(existingData);
+  const chartSummary = chartSummaryFromData(report.data as ReportData);
   const sectionKey = String(section).padStart(2, "0");
   const isLast = section === 16;
 
@@ -84,18 +76,13 @@ export async function POST(request: NextRequest) {
     const raw = await callClaude(promptSection(section as number, user, chartSummary), maxTokens);
     const result = JSON.parse(raw) as { blocks: Block[]; tile?: Record<string, unknown> };
 
-    const { error: dbErr } = await supabase.from("reports").update({
-      generation_status: isLast ? "complete" : `section_${section}`,
-      ...(isLast ? { generated_at: new Date().toISOString() } : {}),
-      data: {
-        ...existingData,
-        ...(result.tile ?? {}),
-        report_content: {
-          ...existingData.report_content,
-          [sectionKey]: result.blocks,
-        },
-      },
-    }).eq("user_token", token);
+    const { error: dbErr } = await supabase.rpc("save_report_section", {
+      p_user_token:  token,
+      p_section_key: sectionKey,
+      p_blocks:      result.blocks,
+      p_tile:        result.tile ?? {},
+      p_status:      isLast ? "complete" : `section_${section}`,
+    });
     if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`);
 
     return NextResponse.json({ ok: true });
