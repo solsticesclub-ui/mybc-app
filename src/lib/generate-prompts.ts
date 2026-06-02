@@ -8,14 +8,28 @@ Return ONLY valid JSON — no markdown fences, no commentary outside the JSON ob
 
 export async function callClaude(prompt: string, maxTokens = 6000): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const msg = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: maxTokens,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const raw = (msg.content[0] as { type: string; text: string }).text.trim();
-  return raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const msg = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: maxTokens,
+        system: SYSTEM,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const raw = (msg.content[0] as { type: string; text: string }).text.trim();
+      return raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+    } catch (err) {
+      const isRetryable =
+        err instanceof Anthropic.APIError && (err.status === 529 || err.status === 503 || err.status === 500);
+      if (isRetryable && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 4000 * (attempt + 1))); // 4s, 8s
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Claude API unavailable after 3 attempts");
 }
 
 export function birthCtx(p: { name: string; birth_date: string; birth_time: string; birth_place: string; language: string }) {
