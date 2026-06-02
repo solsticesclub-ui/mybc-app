@@ -24,26 +24,52 @@ const CODEX_SECTIONS = [
   { n: "15", title: "Appendix · sources", sub: "Methodology · references", view: null },
 ];
 
-function parseInlineEm(s: string) {
-  if (!s || !s.includes("/")) return s;
+function toStr(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "object") {
+    // Claude sometimes returns {"plain":"...","expert":"..."} — prefer plain
+    const o = v as Record<string, unknown>;
+    if (typeof o.plain === "string") return o.plain;
+    if (typeof o.expert === "string") return o.expert;
+    if (typeof o.text === "string") return o.text;
+    return JSON.stringify(v);
+  }
+  return String(v);
+}
+
+function parseInlineEm(raw: unknown) {
+  const s = toStr(raw);
+  if (!s.includes("/")) return s;
   const parts = s.split(/\/([^/]+?)\//g);
   return parts.map((p, i) => i % 2 === 1 ? <em key={i}>{p}</em> : p);
 }
 
-function ReportBlock({ block }: { block: Block }) {
-  const [type, content] = block;
-  if (type === "h") return <h3 className="report-h3">{content as string}</h3>;
-  if (type === "p") return <p>{parseInlineEm(content as string)}</p>;
-  if (type === "note") return <p className="report-note">{parseInlineEm(content as string)}</p>;
-  if (type === "ul") return <ul className="report-ul">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ul>;
-  if (type === "ol") return <ol className="report-ol">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ol>;
-  if (type === "dl") return (
-    <dl className="report-dl">
-      {(content as [string, string][]).map(([k, v], i) => (
-        <div key={i} className="report-dl-row"><dt>{k}</dt><dd>{parseInlineEm(v)}</dd></div>
-      ))}
-    </dl>
-  );
+function ReportBlock({ block }: { block: unknown }) {
+  if (!Array.isArray(block) || block.length < 2) return null;
+  const [type, content] = block as [string, unknown];
+  if (type === "h") return <h3 className="report-h3">{toStr(content)}</h3>;
+  if (type === "p") return <p>{parseInlineEm(content)}</p>;
+  if (type === "note") return <p className="report-note">{parseInlineEm(content)}</p>;
+  if (type === "ul") {
+    const items = Array.isArray(content) ? content : [content];
+    return <ul className="report-ul">{items.map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ul>;
+  }
+  if (type === "ol") {
+    const items = Array.isArray(content) ? content : [content];
+    return <ol className="report-ol">{items.map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ol>;
+  }
+  if (type === "dl") {
+    const rows = Array.isArray(content) ? content : [];
+    return (
+      <dl className="report-dl">
+        {rows.map((row, i) => {
+          const [k, v] = Array.isArray(row) ? row : [toStr(row), ""];
+          return <div key={i} className="report-dl-row"><dt>{toStr(k)}</dt><dd>{parseInlineEm(v)}</dd></div>;
+        })}
+      </dl>
+    );
+  }
   return null;
 }
 
