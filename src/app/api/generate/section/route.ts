@@ -24,14 +24,17 @@ export async function POST(request: NextRequest) {
 
   const maxTokens = SECTION_MAX_TOKENS[section as number] ?? 4000;
 
-  // ── Section 0: creates the report row, no prior data needed ───────────
+  // ── Section 0: generates chart structured data, no prior report needed ──
   if (section === 0) {
     try {
       const raw = await callClaude(promptSection0(user), maxTokens);
       const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default">;
 
       const { data: existing } = await supabase
-        .from("reports").select("user_token").eq("user_token", token).maybeSingle();
+        .from("reports")
+        .select("user_token")
+        .eq("user_token", token)
+        .maybeSingle();
 
       let dbErr;
       if (existing) {
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+      // best-effort status update — update if row exists, insert if not
       const { data: existingOnErr } = await supabase
         .from("reports").select("user_token").eq("user_token", token).maybeSingle();
       if (existingOnErr) {
@@ -60,9 +64,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // ── Sections 1–16: atomic JSONB merge via RPC (safe for parallel calls) ─
+  // ── Sections 1–16: require chart data from section 0 ──────────────────
   const { data: report } = await supabase
-    .from("reports").select("data").eq("user_token", token).single();
+    .from("reports")
+    .select("data")
+    .eq("user_token", token)
+    .single();
 
   if (!report?.data) {
     return NextResponse.json({ error: "Chart data missing — run section 0 first" }, { status: 404 });
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
     const raw = await callClaude(promptSection(section as number, user, chartSummary), maxTokens);
     const result = JSON.parse(raw) as { blocks: Block[]; tile?: Record<string, unknown> };
 
+    // Atomic JSONB merge via Supabase function — no read-then-write race
     const { error: dbErr } = await supabase.rpc("save_report_section", {
       p_user_token:  token,
       p_section_key: sectionKey,
