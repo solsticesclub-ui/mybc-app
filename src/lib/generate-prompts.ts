@@ -59,22 +59,22 @@ export function chartSummaryFromData(data: ReportData): string {
 // ── Per-section token limits ────────────────────────────────────
 export const SECTION_MAX_TOKENS: Record<number, number> = {
   0:  3000,
-  1:  4500,
-  2:  4000,
-  3:  5500,
-  4:  3500,
-  5:  7000,
-  6:  5500,
-  7:  4500,
-  8:  4500,
-  9:  8000,
-  10: 7000,
-  11: 5500,
-  12: 7000,
-  13: 5500,
-  14: 4500,
-  15: 4500,
-  16: 3500,
+  1:  6000,
+  2:  6000,
+  3:  7000,
+  4:  6000,  // was 3500 — was truncating at exactly 3500 tokens
+  5:  9000,
+  6:  7000,
+  7:  6000,
+  8:  6000,
+  9:  10000,
+  10: 9000,
+  11: 7000,
+  12: 9000,
+  13: 7000,
+  14: 6000,
+  15: 6000,
+  16: 5000,
 };
 
 // ── Section 0 — natal chart structured data (no prose) ─────────
