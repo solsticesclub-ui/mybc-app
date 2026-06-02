@@ -9,7 +9,7 @@ Return ONLY valid JSON — no markdown fences, no commentary outside the JSON ob
 export async function callClaude(prompt: string, maxTokens = 6000): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const msg = await client.messages.create({
-    model: "claude-opus-4-8",
+    model: "claude-sonnet-4-6",
     max_tokens: maxTokens,
     system: SYSTEM,
     messages: [{ role: "user", content: prompt }],
