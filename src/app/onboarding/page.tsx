@@ -194,7 +194,7 @@ export default function OnboardingPage() {
                 setLocationLng(null);
               }}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="e.g. Verviers, Belgium"
+              placeholder="e.g. Paris, France"
               required
               autoComplete="off"
             />
