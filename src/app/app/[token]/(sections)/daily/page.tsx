@@ -34,7 +34,7 @@ export default function DailyPage() {
   const [checks, setChecks] = useLocalStorage<Record<string, boolean>>(`mybc.daily.${dateKey}`, {});
 
   const phaseData = protocol[phase];
-  const phaseKeys = Object.keys(protocol);
+  const phaseKeys = ["morning", "day", "evening"].filter((k) => protocol[k]);
   const total = phaseData.items.length;
   const done = phaseData.items.filter((_, i) => checks[`${phase}-${i}`]).length;
   const pct = total > 0 ? (done / total) * 100 : 0;
