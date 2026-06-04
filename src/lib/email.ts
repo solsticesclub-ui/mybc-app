@@ -1,8 +1,14 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM ?? "MYBC <onboarding@resend.dev>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mybc-app.vercel.app";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export async function sendReportReadyEmail(params: {
   name: string;
@@ -25,7 +31,6 @@ export async function sendReportReadyEmail(params: {
   <tr><td align="center">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;">
 
-      <!-- Header -->
       <tr>
         <td style="background:#1f2125;padding:36px 40px 28px;text-align:center;">
           <div style="font-size:13px;font-weight:700;letter-spacing:0.25em;color:rgba(255,255,255,0.5);margin-bottom:6px;">MYBC</div>
@@ -33,19 +38,15 @@ export async function sendReportReadyEmail(params: {
         </td>
       </tr>
 
-      <!-- Body -->
       <tr>
         <td style="padding:40px 40px 32px;">
           <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1f2125;line-height:1.3;">
             Your life code is ready, ${firstName}.
           </p>
           <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">
-            Your complete personalised report has been generated — ${
-              17
-            } chapters written specifically from your natal chart, covering your body, mind, career, relationships, and the year ahead.
+            Your complete personalised report has been generated — 17 chapters written specifically from your natal chart, covering your body, mind, career, relationships, and the year ahead.
           </p>
 
-          <!-- CTA button -->
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td align="center">
@@ -57,7 +58,6 @@ export async function sendReportReadyEmail(params: {
             </tr>
           </table>
 
-          <!-- Bookmark notice -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
             <tr>
               <td style="background:#f7f7f5;border-radius:12px;padding:16px 18px;">
@@ -72,7 +72,6 @@ export async function sendReportReadyEmail(params: {
         </td>
       </tr>
 
-      <!-- Footer -->
       <tr>
         <td style="padding:0 40px 36px;">
           <p style="margin:0;font-size:11px;color:#bbb;line-height:1.6;text-align:center;">
@@ -95,20 +94,20 @@ Your complete MYBC report is ready — 17 chapters written from your natal chart
 Open your report here:
 ${appLink}
 
-Bookmark this link — it is your permanent access to your report.
+Bookmark this link — it is your permanent access to your report. Keep this email as a backup.
 
 MYBC · mindyourbirthcode.com`;
 
   try {
-    await resend.emails.send({
-      from: FROM,
+    await transporter.sendMail({
+      from: `MYBC <${process.env.GMAIL_USER}>`,
       to: email,
       subject: `Your MYBC report is ready, ${firstName}`,
       html,
       text,
     });
   } catch (err) {
-    // Email is non-critical — log but don't fail the generation
+    // Non-critical — log but never fail the generation
     console.error("Failed to send report-ready email:", err);
   }
 }
