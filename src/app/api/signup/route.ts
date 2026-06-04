@@ -5,9 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { email, name, birthDate, birthTime, birthPlace, language } = body;
+  const { email, name, birthFullName, birthDate, birthTime, birthPlace, birthLat, birthLng, language } = body;
 
-  if (!email || !name || !birthDate || !birthTime || !birthPlace) {
+  if (!email || !name || !birthFullName || !birthDate || !birthTime || !birthPlace || birthLat == null || birthLng == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -18,9 +18,12 @@ export async function POST(request: NextRequest) {
     .insert({
       email: email.trim().toLowerCase(),
       name: name.trim(),
+      birth_full_name: birthFullName.trim(),
       birth_date: birthDate,
       birth_time: birthTime,
       birth_place: birthPlace.trim(),
+      birth_lat: birthLat,
+      birth_lng: birthLng,
       language: language ?? "English",
       status: "active",
     })

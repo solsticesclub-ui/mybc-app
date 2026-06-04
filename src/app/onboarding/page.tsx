@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const LANGUAGES = [
@@ -13,6 +13,11 @@ const LANGUAGES = [
   { value: "Dutch",      label: "Nederlands" },
 ];
 
+interface PhotonFeature {
+  geometry: { coordinates: [number, number] };
+  properties: { name: string; country?: string; state?: string; city?: string };
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -20,19 +25,75 @@ export default function OnboardingPage() {
 
   const [form, setForm] = useState({
     name: "",
+    birthFullName: "",
     email: "",
     birthDate: "",
     birthTime: "",
-    birthPlace: "",
     language: "English",
   });
+
+  // Location autocomplete state
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationLabel, setLocationLabel] = useState("");
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   function set(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Fetch Photon suggestions
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (locationQuery.length < 2) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(locationQuery)}&limit=5&layer=city&layer=district`
+        );
+        const json = await res.json();
+        setSuggestions(json.features ?? []);
+        setShowSuggestions(true);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+  }, [locationQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function selectLocation(f: PhotonFeature) {
+    const [lng, lat] = f.geometry.coordinates;
+    const parts = [f.properties.name, f.properties.state, f.properties.country]
+      .filter(Boolean)
+      .join(", ");
+    setLocationLabel(parts);
+    setLocationQuery(parts);
+    setLocationLat(lat);
+    setLocationLng(lng);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (locationLat === null || locationLng === null) {
+      setError("Please select a birth place from the suggestions.");
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -42,9 +103,12 @@ export default function OnboardingPage() {
       body: JSON.stringify({
         email: form.email,
         name: form.name,
+        birthFullName: form.birthFullName,
         birthDate: form.birthDate,
         birthTime: form.birthTime,
-        birthPlace: form.birthPlace,
+        birthPlace: locationLabel,
+        birthLat: locationLat,
+        birthLng: locationLng,
         language: form.language,
       }),
     });
@@ -83,6 +147,21 @@ export default function OnboardingPage() {
           </div>
 
           <div className="auth-field">
+            <label>
+              Full name on birth certificate{" "}
+              <span style={{ fontWeight: 400, opacity: 0.6 }}>(for numerology)</span>
+            </label>
+            <input
+              type="text"
+              value={form.birthFullName}
+              onChange={(e) => set("birthFullName", e.target.value)}
+              placeholder="e.g. Sofia Marie Dupont"
+              required
+              autoComplete="name"
+            />
+          </div>
+
+          <div className="auth-field">
             <label>Your email</label>
             <input
               type="email"
@@ -117,15 +196,49 @@ export default function OnboardingPage() {
             />
           </div>
 
-          <div className="auth-field">
+          <div className="auth-field" ref={containerRef} style={{ position: "relative" }}>
             <label>Place of birth</label>
             <input
               type="text"
-              value={form.birthPlace}
-              onChange={(e) => set("birthPlace", e.target.value)}
+              value={locationQuery}
+              onChange={(e) => {
+                setLocationQuery(e.target.value);
+                setLocationLabel("");
+                setLocationLat(null);
+                setLocationLng(null);
+              }}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
               placeholder="e.g. Verviers, Belgium"
               required
+              autoComplete="off"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul style={{
+                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 12,
+                marginTop: 4, padding: "4px 0", listStyle: "none",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+              }}>
+                {suggestions.map((f, i) => {
+                  const parts = [f.properties.name, f.properties.state, f.properties.country]
+                    .filter(Boolean).join(", ");
+                  return (
+                    <li
+                      key={i}
+                      onMouseDown={() => selectLocation(f)}
+                      style={{
+                        padding: "10px 14px", cursor: "pointer", fontSize: 14,
+                        color: "var(--ink)", borderBottom: i < suggestions.length - 1 ? "1px solid var(--line)" : "none",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {parts}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <div className="auth-field">

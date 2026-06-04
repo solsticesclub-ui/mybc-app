@@ -2,9 +2,12 @@ export interface UserProfile {
   token: string;        // the UUID that IS the user (their URL key)
   email: string;
   name: string;
+  birth_full_name: string; // full name as on birth certificate (for numerology)
   birth_date: string;   // "YYYY-MM-DD"
   birth_time: string;   // "HH:MM"
   birth_place: string;
+  birth_lat: number;    // geocoded latitude
+  birth_lng: number;    // geocoded longitude
   language: string;     // e.g. "English", "French"
   status: string;       // pending | active | past_due | cancelled
   created_at: string;

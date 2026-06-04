@@ -9,6 +9,7 @@ import {
   chartSummaryFromData,
   SECTION_MAX_TOKENS,
 } from "@/lib/generate-prompts";
+import { calcNatalChart } from "@/lib/astro-calc";
 import { NextRequest, NextResponse } from "next/server";
 import type { ReportData, Block } from "@/lib/types";
 
@@ -24,10 +25,19 @@ export async function POST(request: NextRequest) {
 
   const maxTokens = SECTION_MAX_TOKENS[section as number] ?? 4000;
 
-  // ── Section 0: generates chart structured data, no prior report needed ──
+  // ── Section 0: calculate chart with real ephemeris, then interpret with Claude ──
   if (section === 0) {
     try {
-      const raw = await callClaude(promptSection0(user), maxTokens);
+      // Step 1: real ephemeris calculation (no Claude, no guessing)
+      const calc = calcNatalChart({
+        birth_date: user.birth_date,
+        birth_time: user.birth_time,
+        birth_lat: user.birth_lat,
+        birth_lng: user.birth_lng,
+      });
+
+      // Step 2: Claude adds interpretation notes only
+      const raw = await callClaude(promptSection0(user, calc), maxTokens);
       const chartData = JSON.parse(raw) as Pick<ReportData, "chart_signs" | "chart_distribution" | "today_default" | "chart_planets" | "chart_houses" | "chart_aspects">;
 
       const { data: existing } = await supabase

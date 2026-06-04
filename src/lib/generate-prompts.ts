@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ReportData } from "./types";
+import type { NatalChartCalc } from "./astro-calc";
 
 export const SYSTEM = `You are an expert astrologer, biohacker, TCM practitioner, and human optimization coach.
 You generate exhaustive, deeply personalized reports. Never be generic — every claim must be grounded in a specific placement.
@@ -40,8 +41,11 @@ export async function callClaude(prompt: string, maxTokens = 6000): Promise<stri
   throw new Error("Unreachable");
 }
 
-export function birthCtx(p: { name: string; birth_date: string; birth_time: string; birth_place: string; language: string }) {
-  return `PERSON: ${p.name}
+export function birthCtx(p: { name: string; birth_full_name?: string; birth_date: string; birth_time: string; birth_place: string; language: string }) {
+  const nameLine = p.birth_full_name && p.birth_full_name !== p.name
+    ? `PERSON: ${p.name}\nFULL BIRTH NAME (for numerology): ${p.birth_full_name}`
+    : `PERSON: ${p.name}`;
+  return `${nameLine}
 DATE OF BIRTH: ${p.birth_date}
 TIME OF BIRTH: ${p.birth_time}
 PLACE OF BIRTH: ${p.birth_place}
@@ -105,84 +109,66 @@ export const SECTION_MAX_TOKENS: Record<number, number> = {
   16: 3500,
 };
 
-// ── Section 0 — full natal chart data (no prose) ───────────────
-export function promptSection0(p: Parameters<typeof birthCtx>[0]): string {
+// ── Section 0 — interpret pre-calculated natal chart ───────────────
+// calc comes from astro-calc.ts (real ephemeris). Claude adds ONLY interpretation text.
+export function promptSection0(p: Parameters<typeof birthCtx>[0], calc: NatalChartCalc): string {
+  const planetsJson = JSON.stringify(calc.chart_planets.map(pl => ({
+    planet: pl.planet, degree: pl.degree, sign: pl.sign,
+    house: pl.house, quality: pl.quality, retrograde: pl.retrograde, note: "",
+  })), null, 2);
+
+  const housesJson = JSON.stringify(calc.chart_houses.map(h => ({
+    house: h.house, sign: h.sign, planets: h.planets, strength: h.strength, theme: "",
+  })), null, 2);
+
+  const aspectsJson = JSON.stringify(calc.chart_aspects.map(a => ({
+    p1: a.p1, p2: a.p2, type: a.type, orb: a.orb, note: "",
+  })), null, 2);
+
+  const elementsJson = JSON.stringify(calc.chart_distribution.elements.map(e => ({
+    l: e.l, v: e.v, gloss: "",
+  })));
+
+  const modesJson = JSON.stringify(calc.chart_distribution.modes.map(m => ({
+    l: m.l, v: m.v, gloss: "",
+  })));
+
+  const signsJson = JSON.stringify(calc.chart_signs);
+
   return `${birthCtx(p)}
 
-Using the Placidus house system, calculate the complete natal chart. Return ONLY valid JSON with these exact fields:
+The natal chart has already been calculated by a real ephemeris engine. All positions, degrees, signs, houses, and retrograde status below are ACCURATE — do not change any of them.
+
+Your job is ONLY to write the interpretation text for each empty field.
+
+CALCULATED CHART DATA:
+chart_planets: ${planetsJson}
+chart_houses: ${housesJson}
+chart_aspects: ${aspectsJson}
+chart_distribution.elements: ${elementsJson}
+chart_distribution.modes: ${modesJson}
+chart_signs: ${signsJson}
+today_moon_sign: ${calc.today_moon_sign}
+
+Return ONLY valid JSON with this exact structure (fill every empty string field — do not alter any number, sign, degree, house, retrograde, or planets array):
 
 {
-  "chart_signs": [
-    {"sign":"Aries","glyph":"♈","planets":[],"count":0},
-    {"sign":"Taurus","glyph":"♉","planets":[],"count":0},
-    {"sign":"Gemini","glyph":"♊","planets":[],"count":0},
-    {"sign":"Cancer","glyph":"♋","planets":[],"count":0},
-    {"sign":"Leo","glyph":"♌","planets":[],"count":0},
-    {"sign":"Virgo","glyph":"♍","planets":[],"count":0},
-    {"sign":"Libra","glyph":"♎","planets":[],"count":0},
-    {"sign":"Scorpio","glyph":"♏","planets":[],"count":0},
-    {"sign":"Sagittarius","glyph":"♐","planets":[],"count":0},
-    {"sign":"Capricorn","glyph":"♑","planets":[],"count":0},
-    {"sign":"Aquarius","glyph":"♒","planets":[],"count":0},
-    {"sign":"Pisces","glyph":"♓","planets":[],"count":0}
-  ],
+  "chart_signs": <chart_signs unchanged>,
   "chart_distribution": {
-    "elements": [
-      {"l":"Fire","v":0,"gloss":"one-line interpretation for this person"},
-      {"l":"Earth","v":0,"gloss":"..."},
-      {"l":"Air","v":0,"gloss":"..."},
-      {"l":"Water","v":0,"gloss":"..."}
-    ],
-    "modes": [
-      {"l":"Cardinal","v":0,"gloss":"..."},
-      {"l":"Fixed","v":0,"gloss":"..."},
-      {"l":"Mutable","v":0,"gloss":"..."}
-    ],
-    "summary": {"plain":"one accessible sentence about the chart balance","expert":"one technical sentence naming the dominant pattern"}
+    "elements": [fill gloss for each element based on this person's chart],
+    "modes": [fill gloss for each mode],
+    "summary": {"plain":"one accessible sentence about this chart's balance","expert":"one technical sentence naming the dominant pattern with placement references"}
   },
-  "today_default": {"moonSign":"current moon sign on TODAY'S DATE","do":"one specific action for today","avoid":"one thing to avoid today","energy":5},
-  "chart_planets": [
-    {"planet":"Sun","degree":"0°00'","sign":"...","house":1,"quality":"Mutable Air","retrograde":false,"note":"one-line meaning grounded in this placement"},
-    {"planet":"Moon","degree":"0°00'","sign":"...","house":1,"quality":"Fixed Fire","retrograde":false,"note":"..."},
-    {"planet":"ASC","degree":"0°00'","sign":"...","house":1,"quality":"Cardinal Water","retrograde":false,"note":"..."},
-    {"planet":"MC","degree":"0°00'","sign":"...","house":10,"quality":"Mutable Water","retrograde":false,"note":"..."},
-    {"planet":"Mercury","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Venus","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Mars","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Jupiter","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Saturn","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Uranus","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Neptune","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"Pluto","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"North Node","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."},
-    {"planet":"South Node","degree":"0°00'","sign":"...","house":1,"quality":"...","retrograde":false,"note":"..."}
-  ],
-  "chart_houses": [
-    {"house":1,"sign":"...","planets":[],"strength":"Medium","theme":"one-line meaning for this person"},
-    {"house":2,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":3,"sign":"...","planets":[],"strength":"Weak","theme":"..."},
-    {"house":4,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":5,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":6,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":7,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":8,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":9,"sign":"...","planets":[],"strength":"Medium","theme":"..."},
-    {"house":10,"sign":"...","planets":[],"strength":"Very Strong","theme":"..."},
-    {"house":11,"sign":"...","planets":[],"strength":"Weak","theme":"..."},
-    {"house":12,"sign":"...","planets":[],"strength":"Very Strong","theme":"..."}
-  ],
-  "chart_aspects": [
-    {"p1":"Sun","p2":"Jupiter","type":"sextile","orb":"5°","note":"one-line interpretation"},
-    {"p1":"Moon","p2":"Pluto","type":"trine","orb":"7°","note":"..."}
-  ]
-}
-
-Rules:
-- chart_signs: place all 14 points (Sun Moon Mercury Venus Mars Jupiter Saturn Uranus Neptune Pluto ASC MC North Node South Node) into their correct signs.
-- chart_planets: use exact degrees from ephemeris. quality = Modality + Element of the sign (e.g. "Mutable Air"). retrograde = true only for outer planets when applicable.
-- chart_houses: strength = "Very Strong" (3+ planets or contains ASC/MC/Sun/Moon) | "Strong" (2 planets or angular) | "Medium" (1 planet) | "Weak" (no planets, succedent) | "Empty" (no planets, cadent). planets[] = names of planets in that house.
-- chart_aspects: include only major aspects with orb ≤ 8° between the 10 traditional planets + ASC + MC. Types: conjunction, sextile, square, trine, opposition.
-- today_default: moonSign and scores reflect the moon position on TODAY'S DATE specifically.`;
+  "today_default": {
+    "moonSign": "${calc.today_moon_sign}",
+    "do": "one specific action for today based on moon in ${calc.today_moon_sign}",
+    "avoid": "one thing to avoid today",
+    "energy": <number 1-10>
+  },
+  "chart_planets": [fill note for each planet — one meaningful sentence grounded in exact sign + house + aspects],
+  "chart_houses": [fill theme for each house — one-line life meaning for this person],
+  "chart_aspects": [fill note for each aspect — one-line interpretation]
+}`;
 }
 
 // ── Sections 1–16 — prose blocks + tile data ───────────────────

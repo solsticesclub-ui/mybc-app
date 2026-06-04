@@ -8,9 +8,12 @@ create table if not exists public.users (
   token               uuid        primary key default gen_random_uuid(),
   email               text        not null,
   name                text        not null,
+  birth_full_name     text        not null default '',
   birth_date          date        not null,
   birth_time          time        not null,
   birth_place         text        not null,
+  birth_lat           numeric(9,6),
+  birth_lng           numeric(9,6),
   language            text        not null default 'English',
   status              text        not null default 'pending',
   -- pending | active | past_due | cancelled
