@@ -10,6 +10,7 @@ import {
   SECTION_MAX_TOKENS,
 } from "@/lib/generate-prompts";
 import { calcNatalChart } from "@/lib/astro-calc";
+import { sendReportReadyEmail } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 import type { ReportData, Block } from "@/lib/types";
 
@@ -102,6 +103,15 @@ export async function POST(request: NextRequest) {
       p_status:      isLast ? "complete" : `section_${section}`,
     });
     if (dbErr) throw new Error(`DB save failed: ${dbErr.message}`);
+
+    // Send email when the last section completes
+    if (isLast) {
+      await sendReportReadyEmail({
+        name: user.name,
+        email: user.email,
+        token,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
