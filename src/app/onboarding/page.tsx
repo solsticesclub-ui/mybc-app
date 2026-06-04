@@ -24,7 +24,6 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    name: "",
     birthFullName: "",
     email: "",
     birthDate: "",
@@ -102,7 +101,6 @@ export default function OnboardingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: form.email,
-        name: form.name,
         birthFullName: form.birthFullName,
         birthDate: form.birthDate,
         birthTime: form.birthTime,
@@ -134,18 +132,6 @@ export default function OnboardingPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-field">
-            <label>Your first name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="e.g. Sofia"
-              required
-              autoComplete="given-name"
-            />
-          </div>
-
           <div className="auth-field">
             <label>
               Full name on birth certificate{" "}

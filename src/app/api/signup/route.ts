@@ -5,11 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { email, name, birthFullName, birthDate, birthTime, birthPlace, birthLat, birthLng, language } = body;
+  const { email, birthFullName, birthDate, birthTime, birthPlace, birthLat, birthLng, language } = body;
 
-  if (!email || !name || !birthFullName || !birthDate || !birthTime || !birthPlace || birthLat == null || birthLng == null) {
+  if (!email || !birthFullName || !birthDate || !birthTime || !birthPlace || birthLat == null || birthLng == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  // Derive first name from the full birth name (first word)
+  const name = birthFullName.trim().split(/\s+/)[0];
 
   const supabase = createServiceClient();
 
