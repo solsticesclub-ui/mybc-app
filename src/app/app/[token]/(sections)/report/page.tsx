@@ -34,13 +34,18 @@ function parseInlineEm(s: string) {
   return parts.map((p, i) => i % 2 === 1 ? <em key={i}>{p}</em> : p);
 }
 
+// Claude sometimes prefixes list items with "item" from the prompt template — strip it
+function cleanItem(s: string): string {
+  return s.replace(/^item\s*/i, "");
+}
+
 function ReportBlock({ block }: { block: Block }) {
   const [type, content] = block;
   if (type === "h") return <h3 className="report-h3">{content as string}</h3>;
   if (type === "p") return <p>{parseInlineEm(content as string)}</p>;
   if (type === "note") return <p className="report-note">{parseInlineEm(content as string)}</p>;
-  if (type === "ul") return <ul className="report-ul">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ul>;
-  if (type === "ol") return <ol className="report-ol">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(it)}</li>)}</ol>;
+  if (type === "ul") return <ul className="report-ul">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(cleanItem(it))}</li>)}</ul>;
+  if (type === "ol") return <ol className="report-ol">{(content as string[]).map((it, i) => <li key={i}>{parseInlineEm(cleanItem(it))}</li>)}</ol>;
   if (type === "dl") return (
     <dl className="report-dl">
       {(content as [string, string][]).map(([k, v], i) => (
@@ -61,15 +66,30 @@ export default function ReportPage() {
 
   if (chapter) {
     const key = chapter.contentKey;
+    const isChart = chapter.n === "01";
+    const planets = report.data?.chart_planets ?? [];
     const blocks: Block[] = key && reportContent[key]?.length
       ? reportContent[key]
-      : [["p", key ? "(This chapter is still being written.)" : "(Your chart is shown visually — tap the petals to explore your placements.)"]];
+      : isChart ? [] : [["p", "(This chapter is still being written.)"]];
 
     return (
       <div className="page">
         <SectionHeader onBack={() => setOpenCh(null)} backLabel="Report" eyebrow={`Chapter ${chapter.n}`} title={chapter.title} />
         <div className="report-prose">
           <div className="report-chapter-sub">{chapter.sub}</div>
+          {isChart && planets.length > 0 && (
+            <>
+              <h3 className="report-h3">Planetary positions</h3>
+              <dl className="report-dl">
+                {planets.map((p) => (
+                  <div key={p.planet} className="report-dl-row">
+                    <dt>{p.planet}</dt>
+                    <dd>{p.degree} {p.sign}{p.retrograde ? " ℞" : ""} · House {p.house}{p.note ? ` — ${p.note}` : ""}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
           {blocks.map((b, i) => <ReportBlock key={i} block={b} />)}
           {chapter.view && (
             <button className="report-open-tile" onClick={() => router.push(nav(chapter.view!))}>

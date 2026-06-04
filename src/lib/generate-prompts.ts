@@ -176,7 +176,7 @@ const HDR = (p: Parameters<typeof birthCtx>[0], chartSummary: string) =>
   `${birthCtx(p)}
 CHART: ${chartSummary}
 Write in ${p.language}. Every claim grounded in a specific placement. Never generic.
-Block types: ["h","heading"] ["p","paragraph"] ["note","note text"] ["ul",["item",...]] ["ol",["item",...]] ["dl",[["term","definition"],...]]
+Block types: ["h","heading text"] ["p","paragraph text"] ["note","note text"] ["ul",["first sentence","second sentence",...]] ["ol",["first sentence","second sentence",...]] ["dl",[["term","definition"],...]]
 Italic within text: /text/
 
 `;
