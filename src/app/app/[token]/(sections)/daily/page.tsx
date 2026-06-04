@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp, useNav } from "../AppShell";
-import ModeToggle from "@/components/ui/ModeToggle";
 import { todayKey } from "@/lib/moon";
 
 function useLocalStorage<T>(key: string, initial: T): [T, (v: T | ((p: T) => T)) => void] {
@@ -27,7 +26,7 @@ function useLocalStorage<T>(key: string, initial: T): [T, (v: T | ((p: T) => T))
 export default function DailyPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const protocol = report.data!.daily_protocol;
   const [phase, setPhase] = useState("morning");
   const dateKey = todayKey();
@@ -51,7 +50,6 @@ export default function DailyPage() {
           <div className="eyebrow" style={{ marginTop: 4 }}>Section 07 · Daily</div>
           <div className="h2" style={{ marginTop: 2 }}>Your day, mapped</div>
         </div>
-        <ModeToggle mode={mode} setMode={setMode} />
       </div>
 
       <div className="phase-tabs">
@@ -76,7 +74,7 @@ export default function DailyPage() {
 
       <div style={{ background: "var(--paper-dim)", borderRadius: 14, padding: "14px 16px", marginBottom: 4, fontSize: 13, lineHeight: 1.5, color: "var(--ink)" }}>
         <div className="eyebrow" style={{ marginBottom: 4 }}>{phaseData.label} intent</div>
-        <div>{mode === "expert" ? phaseData.intro.expert : phaseData.intro.plain}</div>
+        <div>{phaseData.intro.plain}</div>
       </div>
 
       <div className="checklist">
@@ -94,7 +92,6 @@ export default function DailyPage() {
               <div className="content">
                 <div className="action">{item.action}</div>
                 <div className="sub">{item.sub}</div>
-                {mode === "expert" && <div className="source-chips"><span className="source-chip">{item.source}</span></div>}
               </div>
             </div>
           );

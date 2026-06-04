@@ -8,16 +8,16 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function LovePage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const love = report.data!.love;
   const [tab, setTab] = useState("blueprint");
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 10 · Love & relationships" title="Your love blueprint" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 10 · Love & relationships" title="Your love blueprint" />
 
       <div className="love-hero">
-        <div className="love-quote">{mode === "expert" ? love.blueprint.expert : love.blueprint.plain}</div>
+        <div className="love-quote">{love.blueprint.plain}</div>
       </div>
 
       <div className="body-tabs">

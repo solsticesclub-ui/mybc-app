@@ -8,14 +8,14 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function YearPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const { year_months, year_windows } = report.data!;
   const [selectedIdx, setSelectedIdx] = useState(0);
   const m = year_months[selectedIdx];
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 12 · Year ahead" title="Next twelve months" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 12 · Year ahead" title="Next twelve months" />
 
       <div className="year-strip">
         {year_months.map((mm, i) => {
@@ -46,7 +46,7 @@ export default function YearPage() {
           </div>
           <div className="transit-badge">{m.transit}</div>
         </div>
-        <div className="body">{mode === "expert" ? m.expert : m.plain}</div>
+        <div className="body">{m.plain}</div>
         <div className="legend">
           {(["Energy", "Business", "Body", "Love"] as const).map((label, i) => {
             const value = [m.energy, m.business, m.body, m.love][i];

@@ -8,17 +8,17 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function NutritionPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const nutrition = report.data!.nutrition;
   const [tab, setTab] = useState("foods");
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 05 · Nutrition" title="How you eat" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 05 · Nutrition" title="How you eat" />
 
       <div className="principle-card">
         <div className="eyebrow">Principle</div>
-        <div className="body">{mode === "expert" ? nutrition.principle.expert : nutrition.principle.plain}</div>
+        <div className="body">{nutrition.principle.plain}</div>
       </div>
 
       <div className="body-tabs">

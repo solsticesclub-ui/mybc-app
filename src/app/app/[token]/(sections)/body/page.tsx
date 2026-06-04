@@ -8,18 +8,25 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function BodyPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
-  const body = report.data!.body;
+  const { report } = useApp();
+  const body = report.data?.body;
   const [tab, setTab] = useState("overview");
+
+  if (!body) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 04 · Body" title="Your constitution" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 04 · Body" title="Your constitution" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 04 · Body" title="Your constitution" />
 
       <div className="body-hero">
         <div className="eyebrow" style={{ color: "rgba(255,255,255,0.55)" }}>Constitution type</div>
         <div className="body-type">{body.constitution}</div>
-        <div className="body-blurb">{mode === "expert" ? body.blurb.expert : body.blurb.plain}</div>
+        <div className="body-blurb">{body.blurb.plain}</div>
       </div>
 
       <div className="body-tabs">

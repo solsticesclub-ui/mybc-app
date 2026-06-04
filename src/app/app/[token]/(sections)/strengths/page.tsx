@@ -8,7 +8,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function StrengthsPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const strengths = report.data!.strengths;
   const [idx, setIdx] = useState(0);
   const total = strengths.length;
@@ -17,7 +17,7 @@ export default function StrengthsPage() {
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 02 · Self" title="Strengths" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 02 · Self" title="Strengths" />
 
       <div className="strength-stack">
         <div className="strength-back back2" aria-hidden="true" />
@@ -35,12 +35,7 @@ export default function StrengthsPage() {
             <div className="strength-label">Activated by</div>
             <div className="strength-body">{s.activated}</div>
           </div>
-          {mode === "expert" && (
-            <div className="strength-section">
-              <div className="strength-label">Source</div>
-              <div className="source-chips">{s.source.map((src) => <span key={src} className="source-chip">{src}</span>)}</div>
-            </div>
-          )}
+
         </div>
       </div>
 

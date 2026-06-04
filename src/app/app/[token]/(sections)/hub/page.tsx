@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useApp, useNav } from "../AppShell";
 import MoonGlyph from "@/components/ui/MoonGlyph";
 import EnergyRing from "@/components/ui/EnergyRing";
-import ModeToggle from "@/components/ui/ModeToggle";
 import { calcMoonPhase, moonPhaseName } from "@/lib/moon";
 
 const TILES = [
@@ -23,7 +22,7 @@ const NAV_WIRED = new Set([
 export default function HubPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, profile, mode, setMode } = useApp();
+  const { report, profile } = useApp();
   const data = report.data!;
 
   const now = new Date();
@@ -39,7 +38,6 @@ export default function HubPage() {
           <div className="micro">{dateStr}</div>
           <div className="h1">Hello, {profile.name}</div>
         </div>
-        <ModeToggle mode={mode} setMode={setMode} />
       </div>
 
       <button className="today-card" onClick={() => router.push(nav("daily"))}>

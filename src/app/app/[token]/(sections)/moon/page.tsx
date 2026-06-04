@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApp, useNav } from "../AppShell";
+import { useNav } from "../AppShell";
 import SectionHeader from "@/components/ui/SectionHeader";
 import MoonGlyph from "@/components/ui/MoonGlyph";
 import { buildMoonDays } from "@/lib/moon";
@@ -23,14 +23,13 @@ const weeks = [0, 1, 2, 3].map((w) => MOON_DAYS.slice(w * 7, w * 7 + 7));
 export default function MoonPage() {
   const router = useRouter();
   const nav = useNav();
-  const { mode, setMode } = useApp();
   const [selectedIdx, setSelectedIdx] = useState(2);
   const day = MOON_DAYS[selectedIdx];
   const note = MOON_DAY_NOTES[selectedIdx % MOON_DAY_NOTES.length];
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 11 · Moon" title="Next four weeks" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 11 · Moon" title="Next four weeks" />
 
       <div className="moon-weeks">
         {weeks.map((week, wi) => (
@@ -77,12 +76,7 @@ export default function MoonPage() {
           <div className="advice-row"><span className="advice-label">Do</span><span>{note.do}</span></div>
           <div className="advice-row"><span className="advice-label">Avoid</span><span>{note.avoid}</span></div>
         </div>
-        {mode === "expert" && (
-          <div className="source-chips" style={{ marginTop: 10 }}>
-            <span className="source-chip">☽ {note.sign}</span>
-            <span className="source-chip">{day.phaseName}</span>
-          </div>
-        )}
+
       </div>
     </div>
   );

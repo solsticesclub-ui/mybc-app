@@ -8,17 +8,17 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function GutPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const gut = report.data!.gut;
   const [tab, setTab] = useState("rituals");
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 14 · Gut" title="Your #1 health axis" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 14 · Gut" title="Your #1 health axis" />
 
       <div className="principle-card">
         <div className="eyebrow">Why this matters</div>
-        <div className="body">{mode === "expert" ? gut.principle.expert : gut.principle.plain}</div>
+        <div className="body">{gut.principle.plain}</div>
       </div>
 
       <div className="body-tabs">

@@ -8,7 +8,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function SportPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const sport = report.data!.sport;
   const todayDow = new Date().getDay();
   const todayIdx = (todayDow + 6) % 7;
@@ -18,11 +18,11 @@ export default function SportPage() {
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 06 · Sport" title="How your body moves" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 06 · Sport" title="How your body moves" />
 
       <div className="principle-card">
         <div className="eyebrow">Philosophy</div>
-        <div className="body">{mode === "expert" ? sport.philosophy.expert : sport.philosophy.plain}</div>
+        <div className="body">{sport.philosophy.plain}</div>
       </div>
 
       <div className="body-tabs">

@@ -6,22 +6,26 @@ import { useApp, useNav } from "../AppShell";
 import SectionHeader from "@/components/ui/SectionHeader";
 import type { Block } from "@/lib/types";
 
+// contentKey = the key in report_content where this chapter's prose is stored
+// (matches the generation section number, NOT the display number)
 const CODEX_SECTIONS = [
-  { n: "01", title: "Your chart", sub: "Natal map + element distribution", view: "chart" },
-  { n: "02", title: "Strengths & shadows", sub: "15 strengths · 10 weak spots", view: "strengths" },
-  { n: "03", title: "Mind", sub: "Cognitive signature + attention", view: "mind" },
-  { n: "04", title: "Body", sub: "Constitution · type · care", view: "body" },
-  { n: "05", title: "Nutrition", sub: "What to eat · what to avoid", view: "nutrition" },
-  { n: "06", title: "Sport & movement", sub: "How your body wants to move", view: "sport" },
-  { n: "07", title: "Daily protocol", sub: "Morning · day · evening", view: "daily" },
-  { n: "08", title: "Rituals", sub: "Anchors across the week", view: "rituals" },
-  { n: "09", title: "Career & mission", sub: "Top 10 paths · what to avoid", view: "career" },
-  { n: "10", title: "Love & relationships", sub: "Patterns · compatibility", view: "love" },
-  { n: "11", title: "Moon calendar", sub: "52 weeks · daily scores", view: "moon" },
-  { n: "12", title: "The year ahead", sub: "12 months · themes · windows", view: "year" },
-  { n: "13", title: "Chinese astrology", sub: "BaZi · animal · element", view: "chinese" },
-  { n: "14", title: "Gut & digestion", sub: "Microbiome · timing · stress", view: "gut" },
-  { n: "15", title: "Appendix · sources", sub: "Methodology · references", view: null },
+  { n: "01", title: "Your chart",          sub: "Natal map + element distribution",  view: "chart",     contentKey: null  },
+  { n: "02", title: "Body & appearance",   sub: "Constitution · type · care",         view: "body",      contentKey: "01"  },
+  { n: "03", title: "Nervous system",      sub: "Sensitivity · stress · recovery",    view: null,        contentKey: "02"  },
+  { n: "04", title: "Daily protocol",      sub: "Morning · day · evening",            view: "daily",     contentKey: "03"  },
+  { n: "05", title: "Expression",          sub: "Communication · conflict · voice",   view: "mind",      contentKey: "04"  },
+  { n: "06", title: "Nutrition",           sub: "What to eat · what to avoid",        view: "nutrition", contentKey: "05"  },
+  { n: "07", title: "Sport & movement",    sub: "How your body wants to move",        view: "sport",     contentKey: "06"  },
+  { n: "08", title: "Gut health",          sub: "Microbiome · timing · stress",       view: "gut",       contentKey: "07"  },
+  { n: "09", title: "Mind & cognition",    sub: "Thinking style · focus · learning",  view: null,        contentKey: "08"  },
+  { n: "10", title: "Strengths & shadow",  sub: "15 strengths · 10 weak spots",       view: "strengths", contentKey: "09"  },
+  { n: "11", title: "Career & mission",    sub: "Top 10 paths · what to avoid",       view: "career",    contentKey: "10"  },
+  { n: "12", title: "Relationships",       sub: "Patterns · compatibility",           view: "love",      contentKey: "11"  },
+  { n: "13", title: "Moon calendar",       sub: "52 weeks · daily scores",            view: "moon",      contentKey: "12"  },
+  { n: "14", title: "Rituals & protocols", sub: "Anchors across the week",            view: "rituals",   contentKey: "13"  },
+  { n: "15", title: "Chinese astrology",   sub: "BaZi · animal · element",            view: "chinese",   contentKey: "14"  },
+  { n: "16", title: "Annual cycles",       sub: "Current transits · Saturn phase",    view: "year",      contentKey: "15"  },
+  { n: "17", title: "Your synthesis",      sub: "Core practices · greatest potential",view: null,        contentKey: "16"  },
 ];
 
 function parseInlineEm(s: string) {
@@ -50,16 +54,20 @@ function ReportBlock({ block }: { block: Block }) {
 export default function ReportPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, profile, mode, setMode } = useApp();
+  const { report, profile } = useApp();
   const reportContent = report.data!.report_content ?? {};
   const [openCh, setOpenCh] = useState<string | null>(null);
   const chapter = openCh ? CODEX_SECTIONS.find((s) => s.n === openCh) : null;
 
   if (chapter) {
-    const blocks: Block[] = reportContent[chapter.n] ?? [["p", "(Chapter content not yet written.)"]];
+    const key = chapter.contentKey;
+    const blocks: Block[] = key && reportContent[key]?.length
+      ? reportContent[key]
+      : [["p", key ? "(This chapter is still being written.)" : "(Your chart is shown visually — tap the petals to explore your placements.)"]];
+
     return (
       <div className="page">
-        <SectionHeader onBack={() => setOpenCh(null)} eyebrow={`Report · Chapter ${chapter.n}`} title={chapter.title} mode={mode} setMode={setMode} />
+        <SectionHeader onBack={() => setOpenCh(null)} backLabel="Report" eyebrow={`Chapter ${chapter.n}`} title={chapter.title} />
         <div className="report-prose">
           <div className="report-chapter-sub">{chapter.sub}</div>
           {blocks.map((b, i) => <ReportBlock key={i} block={b} />)}
@@ -76,7 +84,7 @@ export default function ReportPage() {
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Report" title="What this is" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Report" title="What this is" />
       <div className="report-prose">
         <p>The home screen is the <em>door</em>. This is the <em>complete</em> report of you.</p>
         <p>{CODEX_SECTIONS.length} chapters, written from the chart cast for {profile.name} on {profile.birth_date} at {profile.birth_time} in {profile.birth_place}.</p>

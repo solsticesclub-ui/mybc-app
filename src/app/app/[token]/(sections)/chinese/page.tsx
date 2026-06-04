@@ -8,13 +8,13 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function ChinesePage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const chinese = report.data!.chinese;
   const [tab, setTab] = useState("type");
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 13 · Chinese" title="BaZi reading" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 13 · Chinese" title="BaZi reading" />
 
       <div className="chinese-hero">
         <div className="ch-pillars">
@@ -35,7 +35,7 @@ export default function ChinesePage() {
         <>
           <div className="principle-card">
             <div className="eyebrow">{chinese.polarity} {chinese.element} {chinese.animal}</div>
-            <div className="body">{mode === "expert" ? chinese.archetype.expert : chinese.archetype.plain}</div>
+            <div className="body">{chinese.archetype.plain}</div>
           </div>
           <div className="needs-list">
             {chinese.traits.map((t, i) => (

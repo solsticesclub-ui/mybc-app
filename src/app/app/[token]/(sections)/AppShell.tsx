@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import type { Report, UserProfile } from "@/lib/types";
 
 interface AppCtx {
@@ -33,7 +33,8 @@ interface Props {
 }
 
 export default function AppShell({ report, profile, token, isDemo, children }: Props) {
-  const [mode, setMode] = useState("plain");
+  const mode = "plain";
+  const setMode = () => {};
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: false });
 

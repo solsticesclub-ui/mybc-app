@@ -8,18 +8,25 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function MindPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
-  const mind = report.data!.mind;
+  const { report } = useApp();
+  const mind = report.data?.mind;
   const [tab, setTab] = useState("signature");
+
+  if (!mind) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 03 · Mind" title="Your cognitive signature" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 03 · Mind" title="Your cognitive signature" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 03 · Mind" title="Your cognitive signature" />
 
       <div className="principle-card">
         <div className="eyebrow">Signature</div>
         <div className="mind-sig">{mind.signature.label}</div>
-        <div className="body">{mode === "expert" ? mind.signature.expert : mind.signature.plain}</div>
+        <div className="body">{mind.signature.plain}</div>
       </div>
 
       <div className="body-tabs">

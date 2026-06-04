@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useApp, useNav } from "../AppShell";
 import SectionHeader from "@/components/ui/SectionHeader";
 
-function CareerDetail({ idx, onBack, mode, setMode, onJump }: { idx: number; onBack: () => void; mode: string; setMode: (m: string) => void; onJump: (i: number) => void }) {
+function CareerDetail({ idx, onBack, onJump }: { idx: number; onBack: () => void; onJump: (i: number) => void }) {
   const { report } = useApp();
   const careers = report.data!.careers;
   const c = careers[idx];
@@ -13,14 +13,8 @@ function CareerDetail({ idx, onBack, mode, setMode, onJump }: { idx: number; onB
 
   return (
     <div className="page">
-      <SectionHeader onBack={onBack} backLabel="Career" eyebrow={`${c.n} of ${String(careers.length).padStart(2, "0")}`} title={c.title} mode={mode} setMode={setMode} />
-      <div className="career-detail-blurb">{mode === "expert" ? c.expert : c.plain}</div>
-      {mode === "expert" && (
-        <div className="career-source-card">
-          <div className="eyebrow">Astrological source</div>
-          <div className="source-chips" style={{ marginTop: 8 }}>{c.sources.map((s) => <span key={s} className="source-chip">{s}</span>)}</div>
-        </div>
-      )}
+      <SectionHeader onBack={onBack} backLabel="Career" eyebrow={`${c.n} of ${String(careers.length).padStart(2, "0")}`} title={c.title} />
+      <div className="career-detail-blurb">{c.plain}</div>
       <div className="career-section">
         <div className="eyebrow">In practice</div>
         <ul className="strength-list" style={{ marginTop: 8 }}>{c.practice.map((p, i) => <li key={i}>{p}</li>)}</ul>
@@ -36,20 +30,20 @@ function CareerDetail({ idx, onBack, mode, setMode, onJump }: { idx: number; onB
 export default function CareerPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const { careers, career_mission } = report.data!;
   const [detail, setDetail] = useState<number | null>(null);
 
   if (detail !== null) {
-    return <CareerDetail idx={detail} onBack={() => setDetail(null)} onJump={(next) => setDetail(next)} mode={mode} setMode={setMode} />;
+    return <CareerDetail idx={detail} onBack={() => setDetail(null)} onJump={(next) => setDetail(next)} />;
   }
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 09 · Career & Mission" title="What you're built to build" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 09 · Career & Mission" title="What you're built to build" />
       <div className="mission-card">
         <div className="eyebrow">Your mission</div>
-        <div className="mission-body">{mode === "expert" ? career_mission.expert : career_mission.plain}</div>
+        <div className="mission-body">{career_mission.plain}</div>
       </div>
       <div className="career-list-label">Top {careers.length} pathways</div>
       <div className="career-list">

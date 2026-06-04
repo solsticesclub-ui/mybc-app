@@ -8,7 +8,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 export default function RitualsPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
+  const { report } = useApp();
   const { rituals_days, rituals_seasonal } = report.data!;
   const todayDow = new Date().getDay();
   const todayIdx = (todayDow + 6) % 7;
@@ -17,7 +17,7 @@ export default function RitualsPage() {
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 08 · Rituals" title="Anchors of the week" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 08 · Rituals" title="Anchors of the week" />
 
       <div className="week-rail">
         {rituals_days.map((d, i) => {
@@ -40,12 +40,6 @@ export default function RitualsPage() {
           </div>
         </div>
         <div className="ritual-body">{day.ritual}</div>
-        {mode === "expert" && (
-          <>
-            <div className="ritual-divider" />
-            <div className="ritual-source">{day.detail}</div>
-          </>
-        )}
       </div>
 
       <div className="ritual-section-label">Seasonal anchors</div>

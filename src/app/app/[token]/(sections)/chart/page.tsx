@@ -70,14 +70,22 @@ function NatalChartSvg({ signs, highlightIndex = -1, onSelect }: { signs: ChartS
 export default function ChartPage() {
   const router = useRouter();
   const nav = useNav();
-  const { report, mode, setMode } = useApp();
-  const { chart_signs, chart_distribution } = report.data!;
+  const { report } = useApp();
+  const { chart_signs, chart_distribution } = report.data! ?? {};
   const [selected, setSelected] = useState(-1);
+
+  if (!chart_signs || !chart_distribution) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 01 · Your chart" title="The shape of you" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
+
   const sel = selected >= 0 ? chart_signs[selected] : null;
 
   return (
     <div className="page">
-      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 01 · Your chart" title="The shape of you" mode={mode} setMode={setMode} />
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 01 · Your chart" title="The shape of you" />
 
       <div className="chart-wrap">
         <NatalChartSvg signs={chart_signs} highlightIndex={selected} onSelect={setSelected} />
@@ -125,7 +133,7 @@ export default function ChartPage() {
       </div>
 
       <div className="summary-block">
-        {mode === "expert" ? chart_distribution.summary.expert : chart_distribution.summary.plain}
+        {chart_distribution.summary.plain}
       </div>
     </div>
   );
