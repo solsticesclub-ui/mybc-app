@@ -289,8 +289,10 @@ export default function GeneratingPage({
               Enter your app →
             </button>
           ) : (
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", textAlign: "center", maxWidth: 260, lineHeight: 1.6 }}>
-              {isWaiting ? "Waiting for confirmation. Keep this tab open." : "This takes 4–6 minutes. Keep this tab open — your report is being written right now."}
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center", maxWidth: 290, lineHeight: 1.8, fontStyle: "italic" }}>
+              {isWaiting
+                ? "Waiting for confirmation. Keep this tab open."
+                : <>Your entire life code is getting calculated.<br />Great things take time — and this one takes between 3 and 5 minutes.<br /><span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 600, fontStyle: "normal" }}>Please don&apos;t close this page. You&apos;re almost there.</span></>}
             </p>
           )}
         </>
