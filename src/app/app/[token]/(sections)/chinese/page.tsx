@@ -9,8 +9,15 @@ export default function ChinesePage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const chinese = report.data!.chinese;
+  const chinese = report.data?.chinese;
   const [tab, setTab] = useState("type");
+
+  if (!chinese) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 15 · Chinese" title="BaZi & animal sign" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">

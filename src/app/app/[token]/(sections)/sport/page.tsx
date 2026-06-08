@@ -9,11 +9,19 @@ export default function SportPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const sport = report.data!.sport;
+  const sport = report.data?.sport;
   const todayDow = new Date().getDay();
   const todayIdx = (todayDow + 6) % 7;
   const [tab, setTab] = useState("week");
   const [selDay, setSelDay] = useState(todayIdx);
+
+  if (!sport) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 06 · Sport" title="How your body moves" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
+
   const day = sport.week[selDay];
 
   return (

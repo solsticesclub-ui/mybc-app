@@ -9,8 +9,15 @@ export default function GutPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const gut = report.data!.gut;
+  const gut = report.data?.gut;
   const [tab, setTab] = useState("rituals");
+
+  if (!gut) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 14 · Gut" title="Your #1 health axis" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">

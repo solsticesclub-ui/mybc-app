@@ -1,5 +1,5 @@
-const CACHE = "mybc-v1";
-const PRECACHE = ["/hub", "/offline.html"];
+const CACHE = "mybc-v2";
+const PRECACHE = ["/hub"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -22,15 +22,18 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.pathname.startsWith("/api/")) return;
 
+  // Only cache successful responses — never cache errors or redirects
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() =>
-        caches.match(e.request).then((cached) => cached ?? caches.match("/offline.html"))
+        caches.match(e.request).then((cached) => cached ?? Response.error())
       )
   );
 });

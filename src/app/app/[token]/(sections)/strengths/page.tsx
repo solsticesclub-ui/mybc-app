@@ -9,8 +9,16 @@ export default function StrengthsPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const strengths = report.data!.strengths;
+  const strengths = report.data?.strengths;
   const [idx, setIdx] = useState(0);
+
+  if (!strengths?.length) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 02 · Self" title="Strengths" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
+
   const total = strengths.length;
   const s = strengths[idx];
   const go = (n: number) => setIdx((idx + n + total) % total);

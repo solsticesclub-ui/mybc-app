@@ -9,8 +9,17 @@ export default function YearPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const { year_months, year_windows } = report.data!;
+  const year_months = report.data?.year_months;
+  const year_windows = report.data?.year_windows;
   const [selectedIdx, setSelectedIdx] = useState(0);
+
+  if (!year_months?.length || !year_windows) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 12 · Year ahead" title="Next twelve months" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
+
   const m = year_months[selectedIdx];
 
   return (

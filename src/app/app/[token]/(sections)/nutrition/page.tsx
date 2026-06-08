@@ -9,8 +9,15 @@ export default function NutritionPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const nutrition = report.data!.nutrition;
+  const nutrition = report.data?.nutrition;
   const [tab, setTab] = useState("foods");
+
+  if (!nutrition) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 06 · Nutrition" title="Eat for your chart" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">

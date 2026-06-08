@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import type { Report, UserProfile } from "@/lib/types";
 
 interface AppCtx {
@@ -36,6 +36,12 @@ export default function AppShell({ report, profile, token, isDemo, children }: P
   const mode = "plain";
   const setMode = () => {};
   const now = new Date();
+
+  useEffect(() => {
+    if (!isDemo && token) {
+      try { localStorage.setItem("mybc_token", token); } catch {}
+    }
+  }, [token, isDemo]);
   const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: false });
 
   return (

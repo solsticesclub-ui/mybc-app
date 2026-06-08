@@ -60,7 +60,7 @@ export default function ReportPage() {
   const router = useRouter();
   const nav = useNav();
   const { report, profile } = useApp();
-  const reportContent = report.data!.report_content ?? {};
+  const reportContent = report.data?.report_content ?? {};
   const [openCh, setOpenCh] = useState<string | null>(null);
   const chapter = openCh ? CODEX_SECTIONS.find((s) => s.n === openCh) : null;
 
@@ -88,6 +88,33 @@ export default function ReportPage() {
                   </div>
                 ))}
               </dl>
+            </>
+          )}
+          {isChart && planets.length === 0 && report.data?.chart_signs && (
+            <>
+              <h3 className="report-h3">Sign placements</h3>
+              <dl className="report-dl">
+                {report.data.chart_signs.filter((s) => s.planets.length > 0).map((s) => (
+                  <div key={s.sign} className="report-dl-row">
+                    <dt>{s.sign} {s.glyph}</dt>
+                    <dd>{s.planets.join(", ")}</dd>
+                  </div>
+                ))}
+              </dl>
+              {report.data.chart_distribution && (
+                <>
+                  <h3 className="report-h3">Element distribution</h3>
+                  <dl className="report-dl">
+                    {report.data.chart_distribution.elements.map((e) => (
+                      <div key={e.l} className="report-dl-row">
+                        <dt>{e.l}</dt>
+                        <dd>{e.v}% — {e.gloss}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p>{report.data.chart_distribution.summary.plain}</p>
+                </>
+              )}
             </>
           )}
           {blocks.map((b, i) => <ReportBlock key={i} block={b} />)}

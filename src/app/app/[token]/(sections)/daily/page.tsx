@@ -27,10 +27,23 @@ export default function DailyPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const protocol = report.data!.daily_protocol;
+  const protocol = report.data?.daily_protocol;
   const [phase, setPhase] = useState("morning");
   const dateKey = todayKey();
   const [checks, setChecks] = useLocalStorage<Record<string, boolean>>(`mybc.daily.${dateKey}`, {});
+
+  if (!protocol) return (
+    <div className="page">
+      <div className="header-row" style={{ alignItems: "flex-start" }}>
+        <div className="greeting">
+          <button className="page-back" onClick={() => router.push(nav("hub"))}>← Hub</button>
+          <div className="eyebrow" style={{ marginTop: 4 }}>Section 07 · Daily</div>
+          <div className="h2" style={{ marginTop: 2 }}>Your day, mapped</div>
+        </div>
+      </div>
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   const phaseData = protocol[phase];
   const phaseKeys = ["morning", "day", "evening"].filter((k) => protocol[k]);

@@ -9,10 +9,19 @@ export default function RitualsPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const { rituals_days, rituals_seasonal } = report.data!;
+  const rituals_days = report.data?.rituals_days;
+  const rituals_seasonal = report.data?.rituals_seasonal ?? [];
   const todayDow = new Date().getDay();
   const todayIdx = (todayDow + 6) % 7;
   const [selectedIdx, setSelectedIdx] = useState(todayIdx);
+
+  if (!rituals_days?.length) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 08 · Rituals" title="Anchors of the week" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
+
   const day = rituals_days[selectedIdx];
 
   return (

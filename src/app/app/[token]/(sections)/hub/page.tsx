@@ -23,12 +23,12 @@ export default function HubPage() {
   const router = useRouter();
   const nav = useNav();
   const { report, profile } = useApp();
-  const data = report.data!;
+  const data = report.data;
+  const today = data?.today_default;
 
   const now = new Date();
   const phase = calcMoonPhase(now);
   const phaseLabel = moonPhaseName(phase);
-  const today = data.today_default;
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
 
   return (
@@ -48,19 +48,19 @@ export default function HubPage() {
         <div className="body-row">
           <MoonGlyph phase={phase} size={44} stroke="rgba(255,255,255,0.55)" />
           <div style={{ flex: 1, textAlign: "left" }}>
-            <div className="moon-title" style={{ color: "rgb(255,255,255)" }}>Moon in {today.moonSign}</div>
+            <div className="moon-title" style={{ color: "rgb(255,255,255)" }}>Moon in {today?.moonSign ?? "—"}</div>
             <div className="moon-sub">{phaseLabel.toLowerCase()} · activates your ASC</div>
           </div>
-          <EnergyRing value={today.energy} />
+          <EnergyRing value={today?.energy ?? 5} />
         </div>
         <div className="chips">
           <div className="chip">
             <div className="label">Do</div>
-            <div className="value" style={{ color: "rgb(255,255,255)" }}>{today.do}</div>
+            <div className="value" style={{ color: "rgb(255,255,255)" }}>{today?.do ?? ""}</div>
           </div>
           <div className="chip">
             <div className="label">Avoid</div>
-            <div className="value" style={{ color: "rgb(255,255,255)" }}>{today.avoid}</div>
+            <div className="value" style={{ color: "rgb(255,255,255)" }}>{today?.avoid ?? ""}</div>
           </div>
         </div>
       </button>

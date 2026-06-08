@@ -7,7 +7,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 
 function CareerDetail({ idx, onBack, onJump }: { idx: number; onBack: () => void; onJump: (i: number) => void }) {
   const { report } = useApp();
-  const careers = report.data!.careers;
+  const careers = report.data?.careers ?? [];
   const c = careers[idx];
   const go = (delta: number) => onJump((idx + delta + careers.length) % careers.length);
 
@@ -31,8 +31,16 @@ export default function CareerPage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const { careers, career_mission } = report.data!;
+  const careers = report.data?.careers;
+  const career_mission = report.data?.career_mission;
   const [detail, setDetail] = useState<number | null>(null);
+
+  if (!careers || !career_mission) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 09 · Career & Mission" title="What you're built to build" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   if (detail !== null) {
     return <CareerDetail idx={detail} onBack={() => setDetail(null)} onJump={(next) => setDetail(next)} />;

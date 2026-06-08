@@ -9,8 +9,15 @@ export default function LovePage() {
   const router = useRouter();
   const nav = useNav();
   const { report } = useApp();
-  const love = report.data!.love;
+  const love = report.data?.love;
   const [tab, setTab] = useState("blueprint");
+
+  if (!love) return (
+    <div className="page">
+      <SectionHeader onBack={() => router.push(nav("hub"))} eyebrow="Section 10 · Relationships" title="Your love blueprint" />
+      <p style={{ padding: "24px 0", color: "var(--ink-soft)", fontSize: 14 }}>This section is still being generated. Check back in a moment.</p>
+    </div>
+  );
 
   return (
     <div className="page">
